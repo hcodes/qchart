@@ -1,0 +1,45 @@
+.qchart {
+    -webkit-user-select: none
+    -ms-user-select: none
+    user-select: none
+    position: relative;
+}
+
+.qchart__container {
+    position: relative;
+    width: 100%;
+}
+
+.qchart__manager {
+    position: relative;
+    width: 100%;
+    overflow-y: hidden;
+    overflow-x: auto;
+}
+
+.qchart__buffers-container {
+    position: relative;
+    height: 100%;
+}
+
+.qchart__buffer {
+    position: absolute;
+    top: 0;
+}
+
+.qchart__middle-line {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.qchart__middle-dot {
+    position: absolute;
+    left: 50%;
+    border-radius: 100%;
+    z-index: 20;
+    border-style: solid;
+}

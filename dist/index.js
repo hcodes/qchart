@@ -14,8 +14,6 @@ var Elems = function () {
         _classCallCheck(this, Elems);
 
         this.name = 'qchart';
-
-        this._elems = { main: main };
         this._main = main;
     }
 
@@ -23,7 +21,7 @@ var Elems = function () {
         key: 'create',
         value: function create(elemName, tag) {
             var elem = document.createElement(tag || 'div');
-            elem.className = this.name + '__' + elemName;
+            elem.className = this.name + (elemName ? '__' + elemName : '');
 
             return elem;
         }
@@ -56,19 +54,23 @@ var Options = function () {
         _classCallCheck$1(this, Options);
 
         this._defaultOptions = {
-            backgroundColor: 'black',
-            color: 'yellow',
+            backgroundColor: '#000', // black
+            color: '#FFD963', // yellow
             height: 300,
 
             scale: 1,
 
             middleLineWidth: 2,
-            middleLineBackgroundColor: 'yellow',
+            middleLineColor: '#FFD963', // yellow
 
             middleDotBorderWidth: 2,
-            middleDotBorderColor: 2,
             middleDotSize: 5,
-            middleDotBackgroundColor: 'black'
+            middleDotBackgroundColor: '#000', // black
+            middleDotBorderColor1: '#FFD963', // yellow
+            middleDotBorderColor2: '#FD5A3E', // red'
+            middleDotBorderColor3: '#97CC64', // green
+            middleDotBorderColor4: '#77B6E7', // blue
+            middleDotBorderColor5: '#A955B8' // pink
         };
 
         this._options = options || {};
@@ -95,6 +97,8 @@ var Options = function () {
     return Options;
 }();
 
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
 function getMinMax(arr) {
     var min = void 0,
         max = void 0;
@@ -107,36 +111,153 @@ function getMinMax(arr) {
     return { min: min, max: max };
 }
 
+
+
+function setStyleForElem(dom, propertyName, propertyValue) {
+    if (typeof propertyValue === 'number') {
+        propertyValue += 'px';
+    }
+
+    dom.style[propertyName] = propertyValue;
+}
+
+function setStyle(dom, propertyName, propertyValue) {
+    if ((typeof propertyName === 'undefined' ? 'undefined' : _typeof(propertyName)) === 'object') {
+        Object.keys(propertyName).forEach(function (key) {
+            setStyleForElem(dom, key, propertyName[key]);
+        });
+    } else {
+        setStyleForElem(dom, propertyName, propertyValue);
+    }
+}
+
 var _createClass$2 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck$2(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var Manager = function () {
-    function Manager(elem, options) {
-        _classCallCheck$2(this, Manager);
+var MiddleDots = function () {
+    function MiddleDots(main, options) {
+        _classCallCheck$2(this, MiddleDots);
 
-        this._elem = elem;
+        this._main = main;
+
+        this.elems = new Elems(main);
+        this.options = options;
+
+        this._dots = [];
+    }
+
+    _createClass$2(MiddleDots, [{
+        key: 'create',
+        value: function create(colors) {
+            this.remove();
+
+            for (var i = 0; i < colors.length; i++) {
+                var dot = this.elems.create('middle-dot');
+                this._main.appendChild(dot);
+                this._dots.push(dot);
+            }
+
+            this.setStyle(colors);
+        }
+    }, {
+        key: 'setStyle',
+        value: function setStyle$$1(colors) {
+            var size = this.options.get('middleDotSize'),
+                margin = -this.options.get('middleDotSize') / 2 - this.options.get('middleDotBorderWidth'),
+                backgroundColor = this.options.get('middleDotBackgroundColor'),
+                borderWidth = this.options.get('middleDotBorderWidth');
+
+            this._dots.forEach(function (dot, i) {
+                setStyle(dot, {
+                    borderColor: colors[i] || this.options.get('middleDotBorderColor') || this.options.get('middleDotBorderColor' + i),
+                    borderWidth: borderWidth,
+                    backgroundColor: backgroundColor,
+                    marginLeft: margin,
+                    marginTop: margin,
+                    width: size,
+                    height: size
+                });
+            }, this);
+        }
+    }, {
+        key: 'setTop',
+        value: function setTop(positions) {
+            this._dots.forEach(function (dot, i) {
+                setStyle(dot, 'top', positions[i]);
+            });
+        }
+    }, {
+        key: 'remove',
+        value: function remove() {
+            this._dots.forEach(function (dot) {
+                dot.parentNode.removeChild(dot);
+            });
+
+            this._dots = [];
+        }
+    }, {
+        key: 'destroy',
+        value: function destroy() {
+            this.remove();
+
+            this.elems.destroy();
+            delete this.elems;
+
+            delete this.options;
+
+            delete this._main;
+        }
+    }]);
+
+    return MiddleDots;
+}();
+
+var _createClass$3 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck$3(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var QChart = function () {
+    /**
+     * @param {String|DOMElement} dom
+     * @param {Object} options
+     */
+    function QChart(dom, options) {
+        _classCallCheck$3(this, QChart);
+
+        dom = typeof dom === 'string' ? document.querySelector(dom) : dom;
+
+        if (!dom) {
+            return;
+        }
+
+        this._dom = dom;
+        this._dom.classList.add('qchart');
+
+        this.elems = new Elems(dom);
+        this.options = new Options(options);
+
+        this.clearData();
+        this.createBody();
+        this.updateOptions();
+
+        this.scales = {
+            year: 2.5,
+            month: 5,
+            day: 10
+        };
 
         this._buffers = [];
 
-        this.clearData();
-
-        this.options = options;
-        this.elems = new Elems(elem);
-
-        this._width = elem.offsetWidth;
-        this._height = elem.offsetHeight;
+        this._width = this._manager.offsetWidth;
+        this._height = this._manager.offsetHeight;
 
         this._cachedAreaWidth = this._width * 1.5;
 
-        this._buffersContainer = this.elems.create('buffers-container');
-        this.elems.append(this._buffersContainer);
-
         this.bindEvents();
-        this.update();
     }
 
-    _createClass$2(Manager, [{
+    _createClass$3(QChart, [{
         key: 'bindEvents',
         value: function bindEvents() {
             var _this = this;
@@ -149,14 +270,47 @@ var Manager = function () {
                 _this.scroll();
             };
 
-            this._elem.addEventListener('scroll', this._onscroll, false);
+            this._manager.addEventListener('scroll', this._onscroll, false);
             window.addEventListener('resize', this._onresize, false);
         }
     }, {
         key: 'unbindEvents',
         value: function unbindEvents() {
-            this._elem.removeEventListener('scroll', this._onscroll, false);
+            this._manager.removeEventListener('scroll', this._onscroll, false);
             window.removeEventListener('resize', this._onresize, false);
+        }
+    }, {
+        key: 'createBody',
+        value: function createBody() {
+            var elems = this.elems;
+
+            this._info = elems.create('info');
+            elems.append(this._info);
+
+            var container = elems.create('container');
+            elems.append(container);
+
+            this._middleLine = elems.create('middle-line');
+            setStyle(this._middleLine, {
+                backgroundColor: this.options.get('middleLineColor'),
+                width: this.options.get('middleLineWidth'),
+                marginLeft: -this.options.get('middleLineWidth') / 2
+            });
+            elems.append(this._middleLine, container);
+
+            var middleDots = elems.create('middle-dots');
+            elems.append(middleDots, container);
+            this._middleDots = new MiddleDots(middleDots, this.options);
+
+            this._manager = elems.create('manager');
+            setStyle(this._manager, 'height', this.options.get('height'));
+            elems.append(this._manager, container);
+
+            this._buffersContainer = elems.create('buffers-container');
+            elems.append(this._buffersContainer, this._manager);
+
+            this._controls = elems.create('controls');
+            elems.append(this._controls);
         }
     }, {
         key: 'clearData',
@@ -164,39 +318,46 @@ var Manager = function () {
             this._data = { series: [] };
         }
     }, {
+        key: 'redraw',
+        value: function redraw() {
+            this.updateOptions();
+            this.resize();
+        }
+    }, {
         key: 'setData',
         value: function setData(data) {
             this.removeAllBuffers();
 
             if (!data || !Array.isArray(data.series) || !data.series.length) {
+                this._dom.classList.remove('_has-data');
                 this.clearData();
+                this._middleDots.remove();
 
                 return;
+            } else {
+                this._dom.classList.add('_has-data');
             }
 
             this._data = data;
-            this._dataWidth = this._data.series[0].length * this.options.get('scale');
+            this._dataWidth = this._data.series[0].data.length * this.options.get('scale');
             this._buffersContainer.style.width = this._dataWidth + 'px';
 
-            var count = this.getCountBuffers();
-            for (var i = 0; i < count; i++) {
-                this._buffers.push({
-                    left: i * this._width,
-                    width: this._width,
-                    height: this._height,
-                    canvas: null
-                });
-            }
+            var colors = this._data.series.map(function (item, i) {
+                return this.options.get('middleDotBorderColor' + i);
+            }, this);
 
-            this._buffers[count - 1].width = this._dataWidth - (count - 1) * this._width;
-            this._minMax = getMinMax(this._data.series[0]);
+            this._middleDots.create(colors);
+
+            this.addBuffers();
+
+            this._minMax = getMinMax(this._data.series[0].data);
 
             this.draw();
         }
     }, {
         key: 'draw',
         value: function draw() {
-            var scrollLeft = this._elem.scrollLeft,
+            var scrollLeft = this._manager.scrollLeft,
                 x21 = scrollLeft - this._cachedAreaWidth,
                 x22 = scrollLeft + this._cachedAreaWidth;
 
@@ -210,6 +371,23 @@ var Manager = function () {
                     this.removeBuffer(buffer);
                 }
             }, this);
+
+            var index = Math.floor((scrollLeft + this._width / 2 - this._padding) / this.options.get('scale'));
+            if (index < 0) {
+                index = 0;
+            }
+
+            var dots = this._data.series.map(function (item) {
+                var lastIndex = item.data.length - 1;
+                var itemIndex = index;
+                if (itemIndex > lastIndex) {
+                    itemIndex = lastIndex;
+                }
+
+                return this._calcY(item.data[itemIndex][1]);
+            }, this);
+
+            this._middleDots.setTop(dots);
         }
     }, {
         key: 'drawBuffer',
@@ -225,7 +403,7 @@ var Manager = function () {
 
             var ctx = buffer.canvas.getContext('2d'),
                 scale = this.options.get('scale'),
-                series = this._data.series[0];
+                series = this._data.series[0].data;
 
             ctx.fillStyle = 'black';
             ctx.fillRect(0, 0, buffer.width, buffer.height);
@@ -235,7 +413,7 @@ var Manager = function () {
 
             for (var i = 0; i < series.length; i++) {
                 var x = i * scale - num * this._width,
-                    y = this._height - series[i][1] * this._height / this._minMax.max;
+                    y = this._calcY(series[i][1]);
 
                 if (i) {
                     ctx.lineTo(x, y);
@@ -245,6 +423,26 @@ var Manager = function () {
             }
 
             ctx.stroke();
+        }
+    }, {
+        key: '_calcY',
+        value: function _calcY(value) {
+            return this._height - value * this._height / this._minMax.max;
+        }
+    }, {
+        key: 'addBuffers',
+        value: function addBuffers() {
+            var count = this.getCountBuffers();
+            for (var i = 0; i < count; i++) {
+                this._buffers.push({
+                    left: i * this._width,
+                    width: this._width,
+                    height: this._height,
+                    canvas: null
+                });
+            }
+
+            this._buffers[count - 1].width = this._dataWidth - (count - 1) * this._width;
         }
     }, {
         key: 'removeBuffer',
@@ -266,10 +464,22 @@ var Manager = function () {
     }, {
         key: 'getCountBuffers',
         value: function getCountBuffers() {
-            var value = this._dataWidth / this._elem.offsetWidth,
+            var value = this._dataWidth / this._manager.offsetWidth,
                 flooredValue = Math.floor(value);
 
             return value === flooredValue ? value : flooredValue + 1;
+        }
+    }, {
+        key: 'updateOptions',
+        value: function updateOptions() {
+            setStyle(this._dom, {
+                backgroundColor: this.options.get('backgroundColor'),
+                color: this.options.get('color')
+            });
+
+            setStyle(this._manager, 'height', this.options.get('height'));
+
+            this._updatePadding();
         }
     }, {
         key: 'scroll',
@@ -279,8 +489,8 @@ var Manager = function () {
     }, {
         key: 'resize',
         value: function resize() {
-            var width = this._elem.offsetWidth,
-                height = this._elem.offsetHeight;
+            var width = this._manager.offsetWidth,
+                height = this._manager.offsetHeight;
 
             if (width !== this._width || height !== this._height) {
                 this._width = width;
@@ -291,133 +501,24 @@ var Manager = function () {
     }, {
         key: 'update',
         value: function update() {
+            this._updatePadding();
             this.removeAllBuffers();
+            this.addBuffers();
             this.draw();
-
-            var padding = this._elem.offsetWidth / 2;
-            this._buffersContainer.style.marginLeft = padding + 'px';
-            this._buffersContainer.style.paddingRight = padding + 'px';
+        }
+    }, {
+        key: '_updatePadding',
+        value: function _updatePadding() {
+            this._padding = this._manager.offsetWidth / 2;
+            this._buffersContainer.style.marginLeft = this._padding + 'px';
+            this._buffersContainer.style.paddingRight = this._padding + 'px';
         }
     }, {
         key: 'destroy',
         value: function destroy() {
             this.removeAllBuffers();
             this.unbindEvents();
-        }
-    }]);
 
-    return Manager;
-}();
-
-var _createClass$3 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-function _classCallCheck$3(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-var QChart = function () {
-    /**
-     *
-     * @param {String|DOMElement} dom
-     * @param {Object} options
-     * @param {string} [options.height=300]
-     * @param {string} [options.backgroundColor='#000']
-     * @param {string} [options.color='#fff']
-     */
-    function QChart(dom, options) {
-        _classCallCheck$3(this, QChart);
-
-        dom = typeof dom === 'string' ? document.querySelector(dom) : dom;
-
-        if (!dom) {
-            return;
-        }
-
-        this._dom = dom;
-
-        this.elems = new Elems(dom);
-        this.options = new Options(options);
-
-        this.createBody();
-        this.updateOptions();
-
-        this.scales = {
-            year: 2.5,
-            month: 5,
-            day: 10
-        };
-
-        this.manager = new Manager(this._manager, this.options);
-    }
-
-    _createClass$3(QChart, [{
-        key: 'setStyle',
-        value: function setStyle(dom, propertyName, propertyValue) {
-            if (typeof propertyValue === 'number') {
-                propertyValue += 'px';
-            }
-
-            dom.style[propertyName] = propertyValue;
-        }
-    }, {
-        key: 'createBody',
-        value: function createBody() {
-            this._info = this.elems.create('info');
-            this.elems.append(this._info);
-
-            var container = this.elems.create('container');
-            this.elems.append(container);
-
-            this._middleLine = this.elems.create('middle-line');
-            this.setStyle(this._middleLine, 'backgroundColor', this.options.get('middleLineBackgroundColor'));
-            this.setStyle(this._middleLine, 'width', this.options.get('middleLineWidth'));
-            this.setStyle(this._middleLine, 'marginLeft', -this.options.get('middleLineWidth') / 2);
-            this.elems.append(this._middleLine, container);
-
-            this._middleDot = this.elems.create('middle-dot');
-            this.setStyle(this._middleDot, 'borderWidth', this.options.get('middleDotBorderWidth'));
-            this.setStyle(this._middleDot, 'borderColor', this.options.get('middleDotBorderColor'));
-            this.setStyle(this._middleDot, 'backgroundColor', this.options.get('middleDotBackgroundColor'));
-            this.setStyle(this._middleDot, 'width', this.options.get('middleDotSize'));
-            this.setStyle(this._middleDot, 'marginLeft', -this.options.get('middleDotSize') / 2 - this.options.get('middleDotBorderWidth'));
-            this.setStyle(this._middleDot, 'height', this.options.get('middleDotSize'));
-
-            this.elems.append(this._middleDot, container);
-
-            this._manager = this.elems.create('manager');
-            this.setStyle(this._manager, 'height', this.options.get('height'));
-            this.elems.append(this._manager, container);
-
-            this._controls = this.elems.create('controls');
-            this.elems.append(this._controls);
-        }
-    }, {
-        key: 'setData',
-        value: function setData(data) {
-            if (data.series.length) {
-                this._dom.classList.remove('_has-data');
-            } else {
-                this._dom.classList.add('_has-data');
-            }
-
-            this.manager.setData(data);
-        }
-    }, {
-        key: 'redraw',
-        value: function redraw() {
-            this.updateOptions();
-            this.resize();
-        }
-    }, {
-        key: 'updateOptions',
-        value: function updateOptions() {
-            ['backgroundColor', 'color'].forEach(function (option) {
-                this.setStyle(this._dom, option, this.options.get(option));
-            }, this);
-
-            this.setStyle(this._manager, 'height', this.options.get('height'));
-        }
-    }, {
-        key: 'destroy',
-        value: function destroy() {
             this.elems.destroy();
             this.options.destroy();
 

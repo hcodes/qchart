@@ -71,7 +71,7 @@
         "jquery": true
     },
     "globals": {
-        "FastAverageColor": true
+        "QChart": true
     },
     "extends": "eslint:recommended"
 }

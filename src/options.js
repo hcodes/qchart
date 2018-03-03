@@ -1,19 +1,23 @@
 export default class Options {
     constructor(options) {
         this._defaultOptions = {
-            backgroundColor: 'black',
-            color: 'yellow',
+            backgroundColor: '#000', // black
+            color: '#FFD963', // yellow
             height: 300,
 
             scale: 1,
 
             middleLineWidth: 2,
-            middleLineBackgroundColor: 'yellow',
+            middleLineColor: '#FFD963', // yellow
 
             middleDotBorderWidth: 2,
-            middleDotBorderColor: 2,
             middleDotSize: 5,
-            middleDotBackgroundColor: 'black',
+            middleDotBackgroundColor: '#000', // black
+            middleDotBorderColor1: '#FFD963', // yellow
+            middleDotBorderColor2: '#FD5A3E', // red'
+            middleDotBorderColor3: '#97CC64', // green
+            middleDotBorderColor4: '#77B6E7', // blue
+            middleDotBorderColor5: '#A955B8' // pink
         };
 
         this._options = options || {};

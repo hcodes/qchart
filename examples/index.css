@@ -1,0 +1,18 @@
+html, body {
+    background: #000;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+}
+
+#qchart {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    width: 50%;
+    min-width: 300px;
+    transform: translate(-50%, -50%);
+    border: 1px solid #111;
+}

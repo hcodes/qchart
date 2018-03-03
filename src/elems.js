@@ -1,14 +1,12 @@
 export default class Elems {
     constructor(main) {
         this.name = 'qchart';
-
-        this._elems = { main };
         this._main = main;
     }
 
     create(elemName, tag) {
         const elem = document.createElement(tag || 'div');
-        elem.className = this.name + '__' + elemName;
+        elem.className = this.name + (elemName ? '__' + elemName : '');
 
         return elem;
     }

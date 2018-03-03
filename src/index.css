@@ -36,9 +36,16 @@
     z-index: 10;
 }
 
-.qchart__middle-dot {
+.qchart__middle-dots {
     position: absolute;
     left: 50%;
+    top: 0;
+}
+
+.qchart__middle-dot {
+    position: absolute;
+    left: 0;
+    top: 0;
     border-radius: 100%;
     z-index: 20;
     border-style: solid;

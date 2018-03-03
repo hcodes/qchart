@@ -1,5 +1,6 @@
 var q = new QChart('#qchart', {
     scale: 1,
+    middleLineColor: '#333',
     dateFormater: function(timestamp) {
         var date = new Date(timestamp);
 

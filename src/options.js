@@ -2,8 +2,8 @@ export default class Options {
     constructor(options) {
         this._defaultOptions = {
             backgroundColor: '#000', // black
-            color: '#FFD963', // yellow
             height: 300,
+            lineWidth: 1,
 
             scale: 1,
 
@@ -13,11 +13,30 @@ export default class Options {
             middleDotBorderWidth: 2,
             middleDotSize: 5,
             middleDotBackgroundColor: '#000', // black
-            middleDotBorderColor1: '#FFD963', // yellow
-            middleDotBorderColor2: '#FD5A3E', // red'
-            middleDotBorderColor3: '#97CC64', // green
-            middleDotBorderColor4: '#77B6E7', // blue
-            middleDotBorderColor5: '#A955B8' // pink
+            color: '#FFF', // white
+            color0: '#FFD963', // yellow
+            color1: '#FD5A3E', // red'
+            color2: '#97CC64', // green
+            color3: '#77B6E7', // blue
+            color4: '#A955B8', // pink
+
+            dateFormater: function(timestamp) {
+                const date = new Date(timestamp);
+
+                function leadZero(num) {
+                    return num > 9 ? num : '0' + num;
+                }
+
+                return [
+                    date.getFullYear(),
+                    leadZero(date.getMonth() + 1),
+                    leadZero(date.getDate())
+                ].join('-');
+            },
+
+            valueFormater: function(value) {
+                return value;
+            }
         };
 
         this._options = options || {};

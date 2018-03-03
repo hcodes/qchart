@@ -1,7 +1,8 @@
 import Elems from './elems';
 import Options from './options';
 import MiddleDots from './middle-dots';
-import {getMinMax, setStyle} from './tools';
+import CurrentValues from './current-values';
+import {getMinMaxForSomeSeries, setStyle} from './tools';
 
 export default class QChart {
     /**
@@ -64,8 +65,9 @@ export default class QChart {
     createBody() {
         const elems = this.elems;
 
-        this._info = elems.create('info');
-        elems.append(this._info);
+        const current = elems.create('current');
+        elems.append(current);
+        this._current = new CurrentValues(current, this.options);
 
         const container = elems.create('container');
         elems.append(container);
@@ -109,6 +111,7 @@ export default class QChart {
             this._dom.classList.remove('_has-data');
             this.clearData();
             this._middleDots.remove();
+            this._current.remove();
 
             return;
         } else {
@@ -120,19 +123,21 @@ export default class QChart {
         this._buffersContainer.style.width = this._dataWidth + 'px';
 
         const colors = this._data.series.map(function(item, i) {
-            return this.options.get('middleDotBorderColor' + i);
+            return this.options.get('color' + i);
         }, this);
 
         this._middleDots.create(colors);
+        this._current.create(colors);
 
         this.addBuffers();
 
-        this._minMax = getMinMax(this._data.series[0].data);
+        this._minMax = getMinMaxForSomeSeries(this._data.series);
 
         this.draw();
     }
 
     draw() {
+        console.time('a');
         const
             scrollLeft = this._manager.scrollLeft,
             x21 = scrollLeft - this._cachedAreaWidth,
@@ -169,9 +174,27 @@ export default class QChart {
         }, this);
 
         this._middleDots.setTop(dots);
+
+        let timestamp;
+        const values = this._data.series.map(function(item) {
+            const lastIndex = item.data.length - 1;
+            let itemIndex = index;
+            if (itemIndex > lastIndex) {
+                itemIndex = lastIndex;
+            }
+
+            timestamp = item.data[itemIndex][0];
+
+            return item.data[itemIndex][1];
+        }, this);
+
+
+        this._current.setValue(timestamp, values);
+
+        console.timeEnd('a');
     }
 
-    drawBuffer(buffer, num) {
+    drawBuffer(buffer, bufferNum) {
         let canvas = buffer.canvas;
         if (!canvas) {
             buffer.canvas = canvas = this.elems.create('buffer', 'canvas');
@@ -183,28 +206,36 @@ export default class QChart {
 
         const
             ctx = buffer.canvas.getContext('2d'),
-            scale = this.options.get('scale'),
-            series = this._data.series[0].data;
+            scale = this.options.get('scale');
 
-        ctx.fillStyle = 'black';
+        ctx.fillStyle = this.options.get('backgroundColor');
         ctx.fillRect(0, 0, buffer.width, buffer.height);
-        ctx.beginPath();
-        ctx.strokeStyle = 'yellow';
-        ctx.lineWidth = 1;
+        ctx.lineWidth = this.options.get('lineWidth');
 
-        for (let i = 0; i < series.length; i++) {
-            const
-                x = i * scale - num * this._width,
-                y = this._calcY(series[i][1]);
+        for (let n = 0; n < this._data.series.length; n++) {
+            const series = this._data.series[n].data;
 
-            if (i) {
-                ctx.lineTo(x, y);
-            } else {
-                ctx.moveTo(x, y);
+            ctx.strokeStyle = series.color || this.options.get('color' + n);
+            ctx.beginPath();
+
+            for (let i = 0; i < series.length; i++) {
+                const
+                    x = i * scale - bufferNum * this._width,
+                    y = this._calcY(series[i][1]);
+
+                if (i) {
+                    ctx.lineTo(x, y);
+                } else {
+                    ctx.moveTo(x, y);
+                }
+
+                if (x > this._width) {
+                    break;
+                }
             }
-        }
 
-        ctx.stroke();
+            ctx.stroke();
+        }
     }
 
     _calcY(value) {

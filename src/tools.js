@@ -10,16 +10,16 @@ export function getMinMax(arr) {
 }
 
 export function getMinMaxForSomeSeries(series) {
-    const firstMinMax = getMinMax(series[0]);
+    const firstMinMax = getMinMax(series[0].data);
     let
         min = firstMinMax.min,
         max = firstMinMax.max;
 
     if (series.length > 1) {
         for (let i = 0; i < series.length; i++) {
-            let minMax = getMinMax(series[i]);
+            let minMax = getMinMax(series[i].data);
             min = Math.min(minMax.min, min);
-            max = Math.min(minMax.max, max);
+            max = Math.max(minMax.max, max);
         }
     }
 

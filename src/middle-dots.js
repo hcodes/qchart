@@ -33,8 +33,7 @@ export default class MiddleDots {
         this._dots.forEach(function(dot, i) {
             setStyle(dot, {
                 borderColor: colors[i] ||
-                    this.options.get('middleDotBorderColor') ||
-                    this.options.get('middleDotBorderColor' + i),
+                    this.options.get('color' + i),
                 borderWidth,
                 backgroundColor,
                 marginLeft: margin,

@@ -9,10 +9,14 @@ html, body {
 
 #qchart {
     position: fixed;
-    left: 50%;
+    left: 0;
     top: 50%;
-    width: 50%;
-    min-width: 300px;
-    transform: translate(-50%, -50%);
+    width: 100%;
+    transform: translate(0, -50%);
+}
+
+.qchart__container {
     border: 1px solid #111;
+    border-left: 0;
+    border-right: 0;
 }

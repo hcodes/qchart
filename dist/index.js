@@ -55,8 +55,8 @@ var Options = function () {
 
         this._defaultOptions = {
             backgroundColor: '#000', // black
-            color: '#FFD963', // yellow
             height: 300,
+            lineWidth: 1,
 
             scale: 1,
 
@@ -66,11 +66,26 @@ var Options = function () {
             middleDotBorderWidth: 2,
             middleDotSize: 5,
             middleDotBackgroundColor: '#000', // black
-            middleDotBorderColor1: '#FFD963', // yellow
-            middleDotBorderColor2: '#FD5A3E', // red'
-            middleDotBorderColor3: '#97CC64', // green
-            middleDotBorderColor4: '#77B6E7', // blue
-            middleDotBorderColor5: '#A955B8' // pink
+            color: '#FFF', // white
+            color0: '#FFD963', // yellow
+            color1: '#FD5A3E', // red'
+            color2: '#97CC64', // green
+            color3: '#77B6E7', // blue
+            color4: '#A955B8', // pink
+
+            dateFormater: function dateFormater(timestamp) {
+                var date = new Date(timestamp);
+
+                function leadZero(num) {
+                    return num > 9 ? num : '0' + num;
+                }
+
+                return [date.getFullYear(), leadZero(date.getMonth() + 1), leadZero(date.getDate())].join('-');
+            },
+
+            valueFormater: function valueFormater(value) {
+                return value;
+            }
         };
 
         this._options = options || {};
@@ -111,7 +126,21 @@ function getMinMax(arr) {
     return { min: min, max: max };
 }
 
+function getMinMaxForSomeSeries(series) {
+    var firstMinMax = getMinMax(series[0].data);
+    var min = firstMinMax.min,
+        max = firstMinMax.max;
 
+    if (series.length > 1) {
+        for (var i = 0; i < series.length; i++) {
+            var minMax = getMinMax(series[i].data);
+            min = Math.min(minMax.min, min);
+            max = Math.max(minMax.max, max);
+        }
+    }
+
+    return { min: min, max: max };
+}
 
 function setStyleForElem(dom, propertyName, propertyValue) {
     if (typeof propertyValue === 'number') {
@@ -170,7 +199,7 @@ var MiddleDots = function () {
 
             this._dots.forEach(function (dot, i) {
                 setStyle(dot, {
-                    borderColor: colors[i] || this.options.get('middleDotBorderColor') || this.options.get('middleDotBorderColor' + i),
+                    borderColor: colors[i] || this.options.get('color' + i),
                     borderWidth: borderWidth,
                     backgroundColor: backgroundColor,
                     marginLeft: margin,
@@ -217,13 +246,90 @@ var _createClass$3 = function () { function defineProperties(target, props) { fo
 
 function _classCallCheck$3(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
+var CurrentValues = function () {
+    function CurrentValues(main, options) {
+        _classCallCheck$3(this, CurrentValues);
+
+        this._main = main;
+
+        this.elems = new Elems(main);
+        this.options = options;
+
+        this._values = [];
+    }
+
+    _createClass$3(CurrentValues, [{
+        key: 'create',
+        value: function create(colors) {
+            this.remove();
+
+            var date = this.elems.create('current-date');
+            this._date = date;
+            this._main.appendChild(date);
+
+            var values = this.elems.create('current-values');
+            this._main.appendChild(values);
+
+            for (var i = 0; i < colors.length; i++) {
+                var value = this.elems.create('current-value');
+                values.appendChild(value);
+                this._values.push(value);
+            }
+
+            this.setStyle(colors);
+        }
+    }, {
+        key: 'setStyle',
+        value: function setStyle$$1(colors) {
+            this._values.forEach(function (value, i) {
+                setStyle(value, 'color', colors[i] || this.options.get('color' + i));
+            }, this);
+        }
+    }, {
+        key: 'setValue',
+        value: function setValue(timestamp, values) {
+            this._date.innerHTML = this.options.get('dateFormater')(timestamp);
+            this._values.forEach(function (item, i) {
+                item.innerHTML = this.options.get('valueFormater')(values[i], i);
+            }, this);
+        }
+    }, {
+        key: 'remove',
+        value: function remove() {
+            this._values.forEach(function (value) {
+                value.parentNode.removeChild(value);
+            });
+
+            this._values = [];
+        }
+    }, {
+        key: 'destroy',
+        value: function destroy() {
+            this.remove();
+
+            this.elems.destroy();
+            delete this.elems;
+
+            delete this.options;
+
+            delete this._main;
+        }
+    }]);
+
+    return CurrentValues;
+}();
+
+var _createClass$4 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck$4(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
 var QChart = function () {
     /**
      * @param {String|DOMElement} dom
      * @param {Object} options
      */
     function QChart(dom, options) {
-        _classCallCheck$3(this, QChart);
+        _classCallCheck$4(this, QChart);
 
         dom = typeof dom === 'string' ? document.querySelector(dom) : dom;
 
@@ -257,7 +363,7 @@ var QChart = function () {
         this.bindEvents();
     }
 
-    _createClass$3(QChart, [{
+    _createClass$4(QChart, [{
         key: 'bindEvents',
         value: function bindEvents() {
             var _this = this;
@@ -284,8 +390,9 @@ var QChart = function () {
         value: function createBody() {
             var elems = this.elems;
 
-            this._info = elems.create('info');
-            elems.append(this._info);
+            var current = elems.create('current');
+            elems.append(current);
+            this._current = new CurrentValues(current, this.options);
 
             var container = elems.create('container');
             elems.append(container);
@@ -332,6 +439,7 @@ var QChart = function () {
                 this._dom.classList.remove('_has-data');
                 this.clearData();
                 this._middleDots.remove();
+                this._current.remove();
 
                 return;
             } else {
@@ -343,20 +451,22 @@ var QChart = function () {
             this._buffersContainer.style.width = this._dataWidth + 'px';
 
             var colors = this._data.series.map(function (item, i) {
-                return this.options.get('middleDotBorderColor' + i);
+                return this.options.get('color' + i);
             }, this);
 
             this._middleDots.create(colors);
+            this._current.create(colors);
 
             this.addBuffers();
 
-            this._minMax = getMinMax(this._data.series[0].data);
+            this._minMax = getMinMaxForSomeSeries(this._data.series);
 
             this.draw();
         }
     }, {
         key: 'draw',
         value: function draw() {
+            console.time('a');
             var scrollLeft = this._manager.scrollLeft,
                 x21 = scrollLeft - this._cachedAreaWidth,
                 x22 = scrollLeft + this._cachedAreaWidth;
@@ -388,10 +498,27 @@ var QChart = function () {
             }, this);
 
             this._middleDots.setTop(dots);
+
+            var timestamp = void 0;
+            var values = this._data.series.map(function (item) {
+                var lastIndex = item.data.length - 1;
+                var itemIndex = index;
+                if (itemIndex > lastIndex) {
+                    itemIndex = lastIndex;
+                }
+
+                timestamp = item.data[itemIndex][0];
+
+                return item.data[itemIndex][1];
+            }, this);
+
+            this._current.setValue(timestamp, values);
+
+            console.timeEnd('a');
         }
     }, {
         key: 'drawBuffer',
-        value: function drawBuffer(buffer, num) {
+        value: function drawBuffer(buffer, bufferNum) {
             var canvas = buffer.canvas;
             if (!canvas) {
                 buffer.canvas = canvas = this.elems.create('buffer', 'canvas');
@@ -402,27 +529,35 @@ var QChart = function () {
             }
 
             var ctx = buffer.canvas.getContext('2d'),
-                scale = this.options.get('scale'),
-                series = this._data.series[0].data;
+                scale = this.options.get('scale');
 
-            ctx.fillStyle = 'black';
+            ctx.fillStyle = this.options.get('backgroundColor');
             ctx.fillRect(0, 0, buffer.width, buffer.height);
-            ctx.beginPath();
-            ctx.strokeStyle = 'yellow';
-            ctx.lineWidth = 1;
+            ctx.lineWidth = this.options.get('lineWidth');
 
-            for (var i = 0; i < series.length; i++) {
-                var x = i * scale - num * this._width,
-                    y = this._calcY(series[i][1]);
+            for (var n = 0; n < this._data.series.length; n++) {
+                var series = this._data.series[n].data;
 
-                if (i) {
-                    ctx.lineTo(x, y);
-                } else {
-                    ctx.moveTo(x, y);
+                ctx.strokeStyle = series.color || this.options.get('color' + n);
+                ctx.beginPath();
+
+                for (var i = 0; i < series.length; i++) {
+                    var x = i * scale - bufferNum * this._width,
+                        y = this._calcY(series[i][1]);
+
+                    if (i) {
+                        ctx.lineTo(x, y);
+                    } else {
+                        ctx.moveTo(x, y);
+                    }
+
+                    if (x > this._width) {
+                        break;
+                    }
                 }
-            }
 
-            ctx.stroke();
+                ctx.stroke();
+            }
         }
     }, {
         key: '_calcY',

@@ -69,3 +69,14 @@
     text-align: center;
     vertical-align: middle;
 }
+
+.qchart__periods {
+    padding: 8px;
+    text-align: center;
+}
+
+.qchart__period {
+    cursor: pointer;
+    display: inline-block;
+    margin-right: 15px;
+}

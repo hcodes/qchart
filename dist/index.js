@@ -73,7 +73,8 @@ var Options = function () {
             height: 300,
             lineWidth: 1,
 
-            scale: 1,
+            period: 'all',
+            periods: [{ value: 'all', text: 'All' }, { value: 'year', text: 'Year', days: 365 }, { value: 'quarter', text: 'Quarter', days: 91 }, { value: 'month', text: 'Month', days: 30 }],
 
             middleLineWidth: 2,
             middleLineColor: '#FFD963', // yellow
@@ -81,6 +82,7 @@ var Options = function () {
             middleDotBorderWidth: 2,
             middleDotSize: 5,
             middleDotBackgroundColor: '#000', // black
+
             color: '#FFF', // white
             color0: '#FFD963', // yellow
             color1: '#FD5A3E', // red'
@@ -299,26 +301,36 @@ var QChart = function () {
         this.options = new Options(options);
 
         this.clearData();
-        this.createBody();
+        this._createBody();
         this.updateOptions();
-
-        this.scales = {
-            year: 2.5,
-            month: 5,
-            day: 10
-        };
 
         this._buffers = [];
 
         this._width = this.$manager.offsetWidth;
         this._height = this.$manager.offsetHeight;
 
-        this._cachedAreaWidth = this._width * 1.5;
+        this._cachedAreaWidth = this._width * 1.1;
+
+        this._period = this.options.get('period');
+        this._periods = this.options.get('periods');
+        this._periodsByValue = {};
+        this._periods.forEach(function (item) {
+            this._periodsByValue[item.value] = item;
+        }, this);
 
         this.bindEvents();
     }
 
     _createClass$3(QChart, [{
+        key: 'destroy',
+        value: function destroy() {
+            this._removeAllBuffers();
+            this.unbindEvents();
+            this.options.destroy();
+
+            delete this.$dom;
+        }
+    }, {
         key: 'bindEvents',
         value: function bindEvents() {
             var _this = this;
@@ -331,6 +343,15 @@ var QChart = function () {
                 _this.scroll();
             };
 
+            this._onclickperiod = function (e) {
+                var period = e.target.dataset.value;
+                period && _this.setPeriod(period);
+            };
+
+            if (this.$periods) {
+                this.$periods.addEventListener('click', this._onclickperiod, false);
+            }
+
             this.$manager.addEventListener('scroll', this._onscroll, false);
             window.addEventListener('resize', this._onresize, false);
         }
@@ -341,8 +362,8 @@ var QChart = function () {
             window.removeEventListener('resize', this._onresize, false);
         }
     }, {
-        key: 'createBody',
-        value: function createBody() {
+        key: '_createBody',
+        value: function _createBody() {
             var current = createElem('current');
             this.$dom.appendChild(current);
             this.$current = new CurrentValues(current, this.options);
@@ -363,19 +384,23 @@ var QChart = function () {
             this.$buffersContainer = createElem('buffers-container');
             this.$manager.appendChild(this.$buffersContainer);
 
-            this.$controls = createElem('controls');
-            this.$dom.appendChild(this.$controls);
+            var optionsPeriods = this.options.get('periods');
+            if (optionsPeriods) {
+                this.$periods = createElem('periods');
+                this.options.get('periods').forEach(function (item) {
+                    var elem = createElem('period');
+                    elem.dataset.value = item.value;
+                    elem.innerHTML = item.text;
+                    this.$periods.appendChild(elem);
+                }, this);
+
+                this.$dom.appendChild(this.$periods);
+            }
         }
     }, {
         key: 'clearData',
         value: function clearData() {
             this._data = { series: [] };
-        }
-    }, {
-        key: 'redraw',
-        value: function redraw() {
-            this.updateOptions();
-            this.resize();
         }
     }, {
         key: 'setData',
@@ -394,26 +419,28 @@ var QChart = function () {
             }
 
             this._data = data;
-            this._dataWidth = this._data.series[0].data.length * this.options.get('scale');
-            this.$buffersContainer.style.width = this._dataWidth + 'px';
 
-            var colors = this._data.series.map(function (item, i) {
+            this._updateDataWidth();
+
+            var series = this._data.series;
+            var colors = series.map(function (item, i) {
                 return this.options.get('color' + i);
             }, this);
 
             this.$middleDots.create(colors);
             this.$current.create(colors);
 
+            setStyle(this.$dom, 'color', this.options.get('color' + (series.length === 1 ? '0' : '')));
+
             this._addBuffers();
 
-            this._minMax = getMinMaxForSomeSeries(this._data.series);
+            this._minMax = getMinMaxForSomeSeries(series);
 
             this.draw();
         }
     }, {
         key: 'draw',
         value: function draw() {
-            console.time('a');
             var scrollLeft = this.$manager.scrollLeft,
                 x21 = scrollLeft - this._cachedAreaWidth,
                 x22 = scrollLeft + this._cachedAreaWidth;
@@ -429,7 +456,7 @@ var QChart = function () {
                 }
             }, this);
 
-            var index = Math.floor((scrollLeft + this._width / 2 - this._padding) / this.options.get('scale'));
+            var index = Math.floor((scrollLeft + this._width / 2 - this._padding) / this._getScale());
             if (index < 0) {
                 index = 0;
             }
@@ -460,8 +487,6 @@ var QChart = function () {
             }, this);
 
             this.$current.setValue(timestamp, values);
-
-            console.timeEnd('a');
         }
     }, {
         key: '_drawBuffer',
@@ -476,7 +501,7 @@ var QChart = function () {
             }
 
             var ctx = buffer.canvas.getContext('2d'),
-                scale = this.options.get('scale');
+                scale = this._getScale();
 
             ctx.fillStyle = this.options.get('backgroundColor');
             ctx.fillRect(0, 0, buffer.width, buffer.height);
@@ -570,6 +595,13 @@ var QChart = function () {
             this._updatePadding();
         }
     }, {
+        key: 'setPeriod',
+        value: function setPeriod(name) {
+            this._period = name;
+            this._updateDataWidth();
+            this.update();
+        }
+    }, {
         key: 'scroll',
         value: function scroll() {
             this.draw();
@@ -595,6 +627,16 @@ var QChart = function () {
             this.draw();
         }
     }, {
+        key: '_getScale',
+        value: function _getScale() {
+            var width = this.$manager.offsetWidth;
+            if (this._period === 'all') {
+                return width / this._data.series[0].data.length;
+            }
+
+            return width / this._periodsByValue[this._period].days;
+        }
+    }, {
         key: '_updatePadding',
         value: function _updatePadding() {
             this._padding = this.$manager.offsetWidth / 2;
@@ -602,13 +644,10 @@ var QChart = function () {
             this.$buffersContainer.style.paddingRight = this._padding + 'px';
         }
     }, {
-        key: 'destroy',
-        value: function destroy() {
-            this._removeAllBuffers();
-            this.unbindEvents();
-            this.options.destroy();
-
-            delete this.$dom;
+        key: '_updateDataWidth',
+        value: function _updateDataWidth() {
+            this._dataWidth = this._data.series[0].data.length * this._getScale();
+            this.$buffersContainer.style.width = this._dataWidth + 'px';
         }
     }]);
 

@@ -5,7 +5,13 @@ export default class Options {
             height: 300,
             lineWidth: 1,
 
-            scale: 1,
+            period: 'all',
+            periods: [
+                { value: 'all', text: 'All' },
+                { value: 'year', text: 'Year', days: 365 },
+                { value: 'quarter', text: 'Quarter', days: 91 },
+                { value: 'month', text: 'Month', days: 30 }
+            ],
 
             middleLineWidth: 2,
             middleLineColor: '#FFD963', // yellow
@@ -13,6 +19,7 @@ export default class Options {
             middleDotBorderWidth: 2,
             middleDotSize: 5,
             middleDotBackgroundColor: '#000', // black
+
             color: '#FFF', // white
             color0: '#FFD963', // yellow
             color1: '#FD5A3E', // red'

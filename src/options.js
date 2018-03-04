@@ -4,6 +4,7 @@ export default class Options {
             backgroundColor: '#000', // black
             height: 300,
             lineWidth: 1,
+            scrollAlign: 'right',
 
             period: 'all',
             periods: [

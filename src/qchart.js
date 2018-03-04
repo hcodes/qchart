@@ -1,16 +1,20 @@
 import {createElem, setStyle} from './dom';
-import {getMinMaxForSomeSeries} from './tools';
+import {inRange, getMinMaxForSomeSeries} from './tools';
 
+import Events from './events';
 import Options from './options';
 import MiddleDots from './middle-dots';
 import CurrentValues from './current-values';
 
-export default class QChart {
+export default class QChart extends Events {
     /**
      * @param {String|DOMElement} dom
      * @param {Object} options
+     * @see options.js
      */
     constructor(dom, options) {
+        super();
+
         dom = typeof dom === 'string' ?
             document.querySelector(dom) :
             dom;
@@ -79,9 +83,7 @@ export default class QChart {
         this._updateDataWidth();
 
         const series = this._data.series;
-        const colors = series.map(function(item, i) {
-            return item.color || this.options.get('color' + i);
-        }, this);
+        const colors = series.map((item, i) => item.color || this.options.get('color' + i));
 
         this._middleDots.create(colors);
         this._currentValues.create(colors);
@@ -102,6 +104,8 @@ export default class QChart {
     setPeriod(name) {
         if (name === this._period) { return; }
 
+        this.trigger('changeperiod', name);
+
         this._period = name;
 
         const wasSelected = this.$periods.querySelector('._selected');
@@ -121,12 +125,15 @@ export default class QChart {
         if (width !== this._width || height !== this._height) {
             this._width = width;
             this._height = height;
+
             this.update();
+            this.trigger('resize');
         }
     }
 
     scroll() {
         this.draw();
+        this.trigger('scroll');
     }
 
     updateOptions() {
@@ -157,19 +164,15 @@ export default class QChart {
     draw() {
         const
             scrollLeft = this.$buffers.scrollLeft,
-            x21 = scrollLeft - this._cachedAreaWidth,
-            x22 = scrollLeft + this._cachedAreaWidth,
             series = this._data.series;
 
         this._buffers.forEach(function(buffer, num) {
-            const
-                x11 = buffer.left,
-                x12 = buffer.left + this._width;
-
-            if (
-                (x11 > x21 && x11 < x22) ||
-                (x12 > x21 && x12 < x22)
-            ) {
+            if (inRange(
+                buffer.left,
+                buffer.left + this._width,
+                scrollLeft - this._cachedAreaWidth,
+                scrollLeft + this._cachedAreaWidth,
+            )) {
                 !buffer.canvas && this._drawBuffer(buffer, num);
             } else {
                 this._removeBuffer(buffer);
@@ -181,20 +184,8 @@ export default class QChart {
             index = 0;
         }
 
-        const dots = series.map(function(item) {
-            const lastIndex = item.data.length - 1;
-            let itemIndex = index;
-            if (itemIndex > lastIndex) {
-                itemIndex = lastIndex;
-            }
-
-            return this._calcY(item.data[itemIndex][1]);
-        }, this);
-
-        this._middleDots.setTop(dots);
-
         let timestamp;
-        const values = series.map(function(item) {
+        const values = series.map(item => {
             const lastIndex = item.data.length - 1;
             let itemIndex = index;
             if (itemIndex > lastIndex) {
@@ -204,10 +195,11 @@ export default class QChart {
             timestamp = item.data[itemIndex][0];
 
             return item.data[itemIndex][1];
-        }, this);
-
+        });
 
         this._currentValues.setValue(timestamp, values);
+
+        this._middleDots.setTop(values.map(item => this._calcY(item)));
     }
 
     _drawBuffer(buffer, bufferNum) {
@@ -246,7 +238,7 @@ export default class QChart {
                 }
 
                 if (x > this._width) {
-                    //break;
+                    break;
                 }
             }
 

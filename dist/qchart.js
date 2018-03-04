@@ -60,18 +60,116 @@ function getMinMaxForSomeSeries(series) {
     return { min: min, max: max };
 }
 
+function inRange(x11, x12, x21, x22) {
+    return x11 > x21 && x11 < x22 || x12 > x21 && x12 < x22;
+}
+
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
+var Events = function () {
+    function Events() {
+        _classCallCheck(this, Events);
+
+        this._eventBuffer = [];
+    }
+    /**
+     * Attach a handler to an custom event.
+     *
+     * @param {string} type
+     * @param {Function} callback
+     *
+     * @returns {Events} this
+     */
+
+
+    _createClass(Events, [{
+        key: "on",
+        value: function on(type, callback) {
+            if (type && callback) {
+                this._eventBuffer.push({
+                    type: type,
+                    callback: callback
+                });
+            }
+
+            return this;
+        }
+
+        /**
+         * Remove a previously-attached custom event handler.
+         *
+         * @param {string} type
+         * @param {Function} callback
+         *
+         * @returns {Events} this
+         */
+
+    }, {
+        key: "off",
+        value: function off(type, callback) {
+            var buffer = this._eventBuffer;
+
+            for (var i = 0; i < buffer.length; i++) {
+                if (callback === buffer[i].callback && type === buffer[i].type) {
+                    buffer.splice(i, 1);
+                    i--;
+                }
+            }
+
+            return this;
+        }
+
+        /**
+         * Execute all handlers for the given event type.
+         * @param {string} type
+         * @param {*} [data]
+         *
+         * @returns {Event} this
+         */
+
+    }, {
+        key: "trigger",
+        value: function trigger(type, data) {
+            var buffer = this._eventBuffer;
+
+            for (var i = 0; i < buffer.length; i++) {
+                if (type === buffer[i].type) {
+                    buffer[i].callback.call(this, { type: type }, data);
+                }
+            }
+
+            return this;
+        }
+
+        /**
+         * Destroy.
+         */
+
+    }, {
+        key: "destroy",
+        value: function destroy() {
+            delete this._eventBuffer;
+        }
+    }]);
+
+    return Events;
+}();
+
+var _createClass$1 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck$1(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
 var Options = function () {
     function Options(options) {
-        _classCallCheck(this, Options);
+        _classCallCheck$1(this, Options);
 
         this._defaultOptions = {
             backgroundColor: '#000', // black
             height: 300,
             lineWidth: 1,
+            scrollAlign: 'right',
 
             period: 'all',
             periods: [{ value: 'all', text: 'All' }, { value: 'year', text: 'Year', days: 365 }, { value: 'quarter', text: 'Quarter', days: 91 }, { value: 'month', text: 'Month', days: 30 }],
@@ -108,7 +206,7 @@ var Options = function () {
         this._options = options || {};
     }
 
-    _createClass(Options, [{
+    _createClass$1(Options, [{
         key: 'get',
         value: function get(name) {
             var value = this._options[name];
@@ -129,13 +227,13 @@ var Options = function () {
     return Options;
 }();
 
-var _createClass$1 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+var _createClass$2 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-function _classCallCheck$1(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+function _classCallCheck$2(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var MiddleDots = function () {
     function MiddleDots(main, options) {
-        _classCallCheck$1(this, MiddleDots);
+        _classCallCheck$2(this, MiddleDots);
 
         this.$main = main;
 
@@ -144,7 +242,7 @@ var MiddleDots = function () {
         this.$dots = [];
     }
 
-    _createClass$1(MiddleDots, [{
+    _createClass$2(MiddleDots, [{
         key: 'create',
         value: function create(colors) {
             this.remove();
@@ -206,13 +304,13 @@ var MiddleDots = function () {
     return MiddleDots;
 }();
 
-var _createClass$2 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+var _createClass$3 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-function _classCallCheck$2(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+function _classCallCheck$3(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 var CurrentValues = function () {
     function CurrentValues(main, options) {
-        _classCallCheck$2(this, CurrentValues);
+        _classCallCheck$3(this, CurrentValues);
 
         this.$main = main;
 
@@ -221,7 +319,7 @@ var CurrentValues = function () {
         this.$values = [];
     }
 
-    _createClass$2(CurrentValues, [{
+    _createClass$3(CurrentValues, [{
         key: 'create',
         value: function create(colors) {
             this.remove();
@@ -277,51 +375,61 @@ var CurrentValues = function () {
     return CurrentValues;
 }();
 
-var _createClass$3 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+var _createClass$4 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-function _classCallCheck$3(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+function _classCallCheck$4(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var QChart = function () {
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var QChart = function (_Events) {
+    _inherits(QChart, _Events);
+
     /**
      * @param {String|DOMElement} dom
      * @param {Object} options
+     * @see options.js
      */
     function QChart(dom, options) {
-        _classCallCheck$3(this, QChart);
+        _classCallCheck$4(this, QChart);
+
+        var _this = _possibleConstructorReturn(this, (QChart.__proto__ || Object.getPrototypeOf(QChart)).call(this));
 
         dom = typeof dom === 'string' ? document.querySelector(dom) : dom;
 
         if (!dom) {
-            return;
+            return _possibleConstructorReturn(_this);
         }
 
-        this.$dom = dom;
-        this.$dom.classList.add('qchart');
+        _this.$dom = dom;
+        _this.$dom.classList.add('qchart');
 
-        this.options = new Options(options);
+        _this.options = new Options(options);
 
-        this._period = this.options.get('period');
-        this._periods = this.options.get('periods');
-        this._periodsByValue = {};
-        this._periods.forEach(function (item) {
+        _this._period = _this.options.get('period');
+        _this._periods = _this.options.get('periods');
+        _this._periodsByValue = {};
+        _this._periods.forEach(function (item) {
             this._periodsByValue[item.value] = item;
-        }, this);
+        }, _this);
 
-        this._createBody();
-        this.updateOptions();
+        _this._createBody();
+        _this.updateOptions();
 
-        this._data = { series: [] };
-        this._buffers = [];
+        _this._data = { series: [] };
+        _this._buffers = [];
 
-        this._width = this.$buffers.offsetWidth;
-        this._height = this.$buffers.offsetHeight;
+        _this._width = _this.$buffers.offsetWidth;
+        _this._height = _this.$buffers.offsetHeight;
 
-        this._cachedAreaWidth = this._width * 1.1;
+        _this._cachedAreaWidth = _this._width * 1.1;
 
-        this._bindEvents();
+        _this._bindEvents();
+        return _this;
     }
 
-    _createClass$3(QChart, [{
+    _createClass$4(QChart, [{
         key: 'destroy',
         value: function destroy() {
             this._removeAllBuffers();
@@ -342,6 +450,8 @@ var QChart = function () {
     }, {
         key: 'setData',
         value: function setData(data) {
+            var _this2 = this;
+
             this._removeAllBuffers();
 
             if (!data || !Array.isArray(data.series) || !data.series.length) {
@@ -362,8 +472,8 @@ var QChart = function () {
 
             var series = this._data.series;
             var colors = series.map(function (item, i) {
-                return item.color || this.options.get('color' + i);
-            }, this);
+                return item.color || _this2.options.get('color' + i);
+            });
 
             this._middleDots.create(colors);
             this._currentValues.create(colors);
@@ -382,6 +492,8 @@ var QChart = function () {
             if (name === this._period) {
                 return;
             }
+
+            this.trigger('changeperiod', name);
 
             this._period = name;
 
@@ -402,13 +514,16 @@ var QChart = function () {
             if (width !== this._width || height !== this._height) {
                 this._width = width;
                 this._height = height;
+
                 this.update();
+                this.trigger('resize');
             }
         }
     }, {
         key: 'scroll',
         value: function scroll() {
             this.draw();
+            this.trigger('scroll');
         }
     }, {
         key: 'updateOptions',
@@ -440,16 +555,13 @@ var QChart = function () {
     }, {
         key: 'draw',
         value: function draw() {
+            var _this3 = this;
+
             var scrollLeft = this.$buffers.scrollLeft,
-                x21 = scrollLeft - this._cachedAreaWidth,
-                x22 = scrollLeft + this._cachedAreaWidth,
                 series = this._data.series;
 
             this._buffers.forEach(function (buffer, num) {
-                var x11 = buffer.left,
-                    x12 = buffer.left + this._width;
-
-                if (x11 > x21 && x11 < x22 || x12 > x21 && x12 < x22) {
+                if (inRange(buffer.left, buffer.left + this._width, scrollLeft - this._cachedAreaWidth, scrollLeft + this._cachedAreaWidth)) {
                     !buffer.canvas && this._drawBuffer(buffer, num);
                 } else {
                     this._removeBuffer(buffer);
@@ -460,18 +572,6 @@ var QChart = function () {
             if (index < 0) {
                 index = 0;
             }
-
-            var dots = series.map(function (item) {
-                var lastIndex = item.data.length - 1;
-                var itemIndex = index;
-                if (itemIndex > lastIndex) {
-                    itemIndex = lastIndex;
-                }
-
-                return this._calcY(item.data[itemIndex][1]);
-            }, this);
-
-            this._middleDots.setTop(dots);
 
             var timestamp = void 0;
             var values = series.map(function (item) {
@@ -484,9 +584,13 @@ var QChart = function () {
                 timestamp = item.data[itemIndex][0];
 
                 return item.data[itemIndex][1];
-            }, this);
+            });
 
             this._currentValues.setValue(timestamp, values);
+
+            this._middleDots.setTop(values.map(function (item) {
+                return _this3._calcY(item);
+            }));
         }
     }, {
         key: '_drawBuffer',
@@ -524,7 +628,7 @@ var QChart = function () {
                     }
 
                     if (x > this._width) {
-                        //break;
+                        break;
                     }
                 }
 
@@ -575,19 +679,19 @@ var QChart = function () {
     }, {
         key: '_bindEvents',
         value: function _bindEvents() {
-            var _this = this;
+            var _this4 = this;
 
             this._onresize = function () {
-                _this.resize();
+                _this4.resize();
             };
 
             this._onscroll = function () {
-                _this.scroll();
+                _this4.scroll();
             };
 
             this._onclickperiod = function (e) {
                 var period = e.target.dataset.value;
-                period && _this.setPeriod(period);
+                period && _this4.setPeriod(period);
             };
 
             if (this.$periods) {
@@ -676,7 +780,7 @@ var QChart = function () {
     }]);
 
     return QChart;
-}();
+}(Events);
 
 return QChart;
 

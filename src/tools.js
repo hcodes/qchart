@@ -25,3 +25,7 @@ export function getMinMaxForSomeSeries(series) {
 
     return { min, max };
 }
+
+export function inRange(x11, x12, x21, x22) {
+    return (x11 > x21 && x11 < x22) || (x12 > x21 && x12 < x22);
+}

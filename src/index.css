@@ -79,4 +79,10 @@
     cursor: pointer;
     display: inline-block;
     margin-right: 15px;
+    opacity: .6;
+    transition: opacity .3 ease;
+}
+
+.qchart__period._selected {
+    opacity: 1;
 }

@@ -23,23 +23,23 @@ export default class QChart {
 
         this.options = new Options(options);
 
-        this.clearData();
-        this._createBody();
-        this.updateOptions();
-
-        this._buffers = [];
-
-        this._width = this.$manager.offsetWidth;
-        this._height = this.$manager.offsetHeight;
-
-        this._cachedAreaWidth = this._width * 1.1;
-
         this._period = this.options.get('period');
         this._periods = this.options.get('periods');
         this._periodsByValue = {};
         this._periods.forEach(function(item) {
             this._periodsByValue[item.value] = item;
         }, this);
+
+        this._createBody();
+        this.updateOptions();
+
+        this._data = { series: [] };
+        this._buffers = [];
+
+        this._width = this.$manager.offsetWidth;
+        this._height = this.$manager.offsetHeight;
+
+        this._cachedAreaWidth = this._width * 1.1;
 
         this.bindEvents();
     }
@@ -107,6 +107,11 @@ export default class QChart {
                 const elem = createElem('period');
                 elem.dataset.value = item.value;
                 elem.innerHTML = item.text;
+                elem.classList.add('_value_' + item.value);
+                if (this._period === item.value) {
+                    elem.classList.add('_selected');
+                }
+
                 this.$periods.appendChild(elem);
             }, this);
 
@@ -115,7 +120,7 @@ export default class QChart {
     }
 
     clearData() {
-        this._data = { series: [] };
+        this.setData({ series: [] });
     }
 
     setData(data) {
@@ -123,9 +128,10 @@ export default class QChart {
 
         if (!data || !Array.isArray(data.series) || !data.series.length) {
             this.$dom.classList.remove('_has-data');
-            this.clearData();
             this.$middleDots.remove();
             this.$current.remove();
+
+            this._data = { series: [] };
 
             return;
         } else {
@@ -315,7 +321,16 @@ export default class QChart {
     }
 
     setPeriod(name) {
+        if (name === this._period) { return; }
+
         this._period = name;
+
+        const wasSelected = this.$periods.querySelector('._selected');
+        wasSelected && wasSelected.classList.remove('_selected');
+
+        const selected = this.$periods.querySelector('._value_' + name);
+        selected && selected.classList.add('_selected');
+
         this._updateDataWidth();
         this.update();
     }

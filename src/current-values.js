@@ -6,7 +6,7 @@ export default class CurrentValues {
 
         this.options = options;
 
-        this.$values = [];
+        this._values = [];
     }
 
     create(colors) {
@@ -15,42 +15,41 @@ export default class CurrentValues {
         this.$date = createElem('current-date');
         this.$main.appendChild(this.$date);
 
-        const values = createElem('current-values');
-        this.$main.appendChild(values);
+        const $values = createElem('current-values');
+        this.$main.appendChild($values);
 
         for (let i = 0; i < colors.length; i++) {
             const value = createElem('current-value');
-            values.appendChild(value);
-            this.$values.push(value);
+            $values.appendChild(value);
+            this._values.push(value);
         }
 
         this.setStyle(colors);
     }
 
     setStyle(colors) {
-        this.$values.forEach(function(value, i) {
+        this._values.forEach((value, i) => {
             setStyle(value, 'color', colors[i] || this.options.get('color' + i));
-        }, this);
+        });
     }
 
-    setValue(timestamp, values) {
-        this.$date.innerHTML = this.options.get('dateFormater')(timestamp);
-        this.$values.forEach(function(item, i) {
+    setValues(values, timestamp) {
+        this._values.forEach((item, i) => {
             item.innerHTML = this.options.get('valueFormater')(values[i], i);
-        }, this);
+        });
+
+        this.$date.innerHTML = this.options.get('dateFormater')(timestamp);
     }
 
     remove() {
-        this.$values.forEach(function(value) {
-            value.parentNode.removeChild(value);
-        });
-
-        this.$values = [];
+        this._values.forEach(value => value.parentNode.removeChild(value));
+        this._values = [];
     }
 
     destroy() {
         this.remove();
 
+        delete this._values;
         delete this.options;
         delete this.$main;
     }

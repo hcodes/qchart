@@ -55,6 +55,8 @@ export default class QChart extends Events {
         this._middleDots.destroy();
         this._currentValues.destroy();
 
+        delete this.$periods;
+
         this.$dom.innerHTML = '';
         delete this.$dom;
     }
@@ -81,6 +83,7 @@ export default class QChart extends Events {
         this._data = data;
 
         this._updateDataWidth();
+        this._updateScrollAlign();
 
         const series = this._data.series;
         const colors = series.map((item, i) => item.color || this.options.get('color' + i));
@@ -197,7 +200,7 @@ export default class QChart extends Events {
             return item.data[itemIndex][1];
         });
 
-        this._currentValues.setValue(timestamp, values);
+        this._currentValues.setValues(values, timestamp);
 
         this._middleDots.setTop(values.map(item => this._calcY(item)));
     }
@@ -267,10 +270,14 @@ export default class QChart extends Events {
         this.$buffersContainer = createElem('buffers-container');
         this.$buffers.appendChild(this.$buffersContainer);
 
+        this._createPeriods();
+    }
+
+    _createPeriods() {
         const optionsPeriods = this.options.get('periods');
         if (optionsPeriods) {
             this.$periods = createElem('periods');
-            this.options.get('periods').forEach(function(item) {
+            optionsPeriods.forEach(item => {
                 const elem = createElem('period');
                 elem.dataset.value = item.value;
                 elem.innerHTML = item.text;
@@ -280,35 +287,29 @@ export default class QChart extends Events {
                 }
 
                 this.$periods.appendChild(elem);
-            }, this);
+            });
 
             this.$dom.appendChild(this.$periods);
         }
     }
 
     _bindEvents() {
-        this._onresize = () => {
-            this.resize();
-        };
-
-        this._onscroll = () => {
-            this.scroll();
-        };
-
+        this._onresize = this.resize.bind(this);
+        this._onscroll = this.scroll.bind(this);
         this._onclickperiod = (e) => {
             const period = e.target.dataset.value;
             period && this.setPeriod(period);
         };
 
-        if (this.$periods) {
-            this.$periods.addEventListener('click', this._onclickperiod, false);
-        }
+        this.$periods && this.$periods.addEventListener('click', this._onclickperiod, false);
 
         this.$buffers.addEventListener('scroll', this._onscroll, false);
         window.addEventListener('resize', this._onresize, false);
     }
 
     _unbindEvents() {
+        this.$periods && this.$periods.removeEventListener('click', this._onclickperiod, false);
+
         this.$buffers.removeEventListener('scroll', this._onscroll, false);
         window.removeEventListener('resize', this._onresize, false);
     }
@@ -374,5 +375,12 @@ export default class QChart extends Events {
     _updateDataWidth() {
         this._dataWidth = this._data.series[0].data.length * this._getScale();
         setStyle(this.$buffersContainer, 'width', this._dataWidth);
+    }
+
+    _updateScrollAlign() {
+        const align = this.options.get('scrollAlign');
+        this.$buffers.scrollLeft = align === 'right' ?
+            this.$buffersContainer.offsetWidth + this._bufferPadding * 2 - this.$buffers.offsetWidth :
+            0;
     }
 }

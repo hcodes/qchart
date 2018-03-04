@@ -10,7 +10,7 @@
     width: 100%;
 }
 
-.qchart__manager {
+.qchart__buffers {
     position: relative;
     width: 100%;
     overflow-y: hidden;

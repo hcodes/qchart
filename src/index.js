@@ -35,87 +35,23 @@ export default class QChart {
         this._data = { series: [] };
         this._buffers = [];
 
-        this._width = this.$manager.offsetWidth;
-        this._height = this.$manager.offsetHeight;
+        this._width = this.$buffers.offsetWidth;
+        this._height = this.$buffers.offsetHeight;
 
         this._cachedAreaWidth = this._width * 1.1;
 
-        this.bindEvents();
+        this._bindEvents();
     }
 
     destroy() {
         this._removeAllBuffers();
-        this.unbindEvents();
+        this._unbindEvents();
+
         this.options.destroy();
+        this._middleDots.destroy();
+        this._currentValues.destroy();
 
         delete this.$dom;
-    }
-
-    bindEvents() {
-        this._onresize = () => {
-            this.resize();
-        };
-
-        this._onscroll = () => {
-            this.scroll();
-        };
-
-        this._onclickperiod = (e) => {
-            const period = e.target.dataset.value;
-            period && this.setPeriod(period);
-        };
-
-        if (this.$periods) {
-            this.$periods.addEventListener('click', this._onclickperiod, false);
-        }
-
-        this.$manager.addEventListener('scroll', this._onscroll, false);
-        window.addEventListener('resize', this._onresize, false);
-    }
-
-    unbindEvents() {
-        this.$manager.removeEventListener('scroll', this._onscroll, false);
-        window.removeEventListener('resize', this._onresize, false);
-    }
-
-    _createBody() {
-        const current = createElem('current');
-        this.$dom.appendChild(current);
-        this.$current = new CurrentValues(current, this.options);
-
-        const container = createElem('container');
-        this.$dom.appendChild(container);
-
-        this.$middleLine = createElem('middle-line');
-        container.appendChild(this.$middleLine);
-
-        const middleDots = createElem('middle-dots');
-        container.appendChild(middleDots);
-        this.$middleDots = new MiddleDots(middleDots, this.options);
-
-        this.$manager = createElem('manager');
-        container.appendChild(this.$manager);
-
-        this.$buffersContainer = createElem('buffers-container');
-        this.$manager.appendChild(this.$buffersContainer);
-
-        const optionsPeriods = this.options.get('periods');
-        if (optionsPeriods) {
-            this.$periods = createElem('periods');
-            this.options.get('periods').forEach(function(item) {
-                const elem = createElem('period');
-                elem.dataset.value = item.value;
-                elem.innerHTML = item.text;
-                elem.classList.add('_value_' + item.value);
-                if (this._period === item.value) {
-                    elem.classList.add('_selected');
-                }
-
-                this.$periods.appendChild(elem);
-            }, this);
-
-            this.$dom.appendChild(this.$periods);
-        }
     }
 
     clearData() {
@@ -127,8 +63,8 @@ export default class QChart {
 
         if (!data || !Array.isArray(data.series) || !data.series.length) {
             this.$dom.classList.remove('_has-data');
-            this.$middleDots.remove();
-            this.$current.remove();
+            this._middleDots.remove();
+            this._currentValues.remove();
 
             this._data = { series: [] };
 
@@ -143,11 +79,11 @@ export default class QChart {
 
         const series = this._data.series;
         const colors = series.map(function(item, i) {
-            return this.options.get('color' + i);
+            return item.color || this.options.get('color' + i);
         }, this);
 
-        this.$middleDots.create(colors);
-        this.$current.create(colors);
+        this._middleDots.create(colors);
+        this._currentValues.create(colors);
 
         setStyle(
             this.$dom,
@@ -162,11 +98,67 @@ export default class QChart {
         this.draw();
     }
 
+    setPeriod(name) {
+        if (name === this._period) { return; }
+
+        this._period = name;
+
+        const wasSelected = this.$periods.querySelector('._selected');
+        wasSelected && wasSelected.classList.remove('_selected');
+
+        const selected = this.$periods.querySelector('._value_' + name);
+        selected && selected.classList.add('_selected');
+
+        this._updateDataWidth();
+        this.update();
+    }
+
+    resize() {
+        const
+            width = this.$buffers.offsetWidth,
+            height = this.$buffers.offsetHeight;
+
+        if (width !== this._width || height !== this._height) {
+            this._width = width;
+            this._height = height;
+            this.update();
+        }
+    }
+
+    scroll() {
+        this.draw();
+    }
+
+    updateOptions() {
+        setStyle(this.$dom, {
+            backgroundColor: this.options.get('backgroundColor'),
+            color: this.options.get('color')
+        });
+
+        setStyle(this.$middleLine, {
+            backgroundColor: this.options.get('middleLineColor'),
+            width: this.options.get('middleLineWidth'),
+            marginLeft: -this.options.get('middleLineWidth') / 2
+        });
+
+        setStyle(this.$buffers, 'height', this.options.get('height'));
+
+        this._updatePadding();
+    }
+
+    update() {
+        this._updatePadding();
+        this._removeAllBuffers();
+        this._addBuffers();
+        this.draw();
+    }
+
     draw() {
         const
-            scrollLeft = this.$manager.scrollLeft,
+            scrollLeft = this.$buffers.scrollLeft,
             x21 = scrollLeft - this._cachedAreaWidth,
-            x22 = scrollLeft + this._cachedAreaWidth;
+            x22 = scrollLeft + this._cachedAreaWidth,
+            series = this._data.series;
 
         this._buffers.forEach(function(buffer, num) {
             const
@@ -188,7 +180,7 @@ export default class QChart {
             index = 0;
         }
 
-        const dots = this._data.series.map(function(item) {
+        const dots = series.map(function(item) {
             const lastIndex = item.data.length - 1;
             let itemIndex = index;
             if (itemIndex > lastIndex) {
@@ -198,10 +190,10 @@ export default class QChart {
             return this._calcY(item.data[itemIndex][1]);
         }, this);
 
-        this.$middleDots.setTop(dots);
+        this._middleDots.setTop(dots);
 
         let timestamp;
-        const values = this._data.series.map(function(item) {
+        const values = series.map(function(item) {
             const lastIndex = item.data.length - 1;
             let itemIndex = index;
             if (itemIndex > lastIndex) {
@@ -214,7 +206,7 @@ export default class QChart {
         }, this);
 
 
-        this.$current.setValue(timestamp, values);
+        this._currentValues.setValue(timestamp, values);
     }
 
     _drawBuffer(buffer, bufferNum) {
@@ -223,7 +215,7 @@ export default class QChart {
             buffer.canvas = canvas = createElem('buffer', 'canvas');
             canvas.width = buffer.width;
             canvas.height = buffer.height;
-            canvas.style.left = buffer.left + 'px';
+            setStyle(canvas, 'left', buffer.left);
             this.$buffersContainer.appendChild(canvas);
         }
 
@@ -261,6 +253,73 @@ export default class QChart {
         }
     }
 
+    _createBody() {
+        const current = createElem('current');
+        this.$dom.appendChild(current);
+        this._currentValues = new CurrentValues(current, this.options);
+
+        const container = createElem('container');
+        this.$dom.appendChild(container);
+
+        this.$middleLine = createElem('middle-line');
+        container.appendChild(this.$middleLine);
+
+        const middleDots = createElem('middle-dots');
+        container.appendChild(middleDots);
+        this._middleDots = new MiddleDots(middleDots, this.options);
+
+        this.$buffers = createElem('buffers');
+        container.appendChild(this.$buffers);
+
+        this.$buffersContainer = createElem('buffers-container');
+        this.$buffers.appendChild(this.$buffersContainer);
+
+        const optionsPeriods = this.options.get('periods');
+        if (optionsPeriods) {
+            this.$periods = createElem('periods');
+            this.options.get('periods').forEach(function(item) {
+                const elem = createElem('period');
+                elem.dataset.value = item.value;
+                elem.innerHTML = item.text;
+                elem.classList.add('_value_' + item.value);
+                if (this._period === item.value) {
+                    elem.classList.add('_selected');
+                }
+
+                this.$periods.appendChild(elem);
+            }, this);
+
+            this.$dom.appendChild(this.$periods);
+        }
+    }
+
+    _bindEvents() {
+        this._onresize = () => {
+            this.resize();
+        };
+
+        this._onscroll = () => {
+            this.scroll();
+        };
+
+        this._onclickperiod = (e) => {
+            const period = e.target.dataset.value;
+            period && this.setPeriod(period);
+        };
+
+        if (this.$periods) {
+            this.$periods.addEventListener('click', this._onclickperiod, false);
+        }
+
+        this.$buffers.addEventListener('scroll', this._onscroll, false);
+        window.addEventListener('resize', this._onresize, false);
+    }
+
+    _unbindEvents() {
+        this.$buffers.removeEventListener('scroll', this._onscroll, false);
+        window.removeEventListener('resize', this._onresize, false);
+    }
+
     _calcY(value) {
         return this._height - value * this._height / this._minMax.max;
     }
@@ -296,69 +355,14 @@ export default class QChart {
 
     _getCountBuffers() {
         const
-            value = this._dataWidth / this.$manager.offsetWidth,
+            value = this._dataWidth / this.$buffers.offsetWidth,
             flooredValue = Math.floor(value);
 
         return value === flooredValue ? value : flooredValue + 1;
     }
 
-    updateOptions() {
-        setStyle(this.$dom, {
-            backgroundColor: this.options.get('backgroundColor'),
-            color: this.options.get('color')
-        });
-
-        setStyle(this.$middleLine, {
-            backgroundColor: this.options.get('middleLineColor'),
-            width: this.options.get('middleLineWidth'),
-            marginLeft: -this.options.get('middleLineWidth') / 2
-        });
-
-        setStyle(this.$manager, 'height', this.options.get('height'));
-
-        this._updatePadding();
-    }
-
-    setPeriod(name) {
-        if (name === this._period) { return; }
-
-        this._period = name;
-
-        const wasSelected = this.$periods.querySelector('._selected');
-        wasSelected && wasSelected.classList.remove('_selected');
-
-        const selected = this.$periods.querySelector('._value_' + name);
-        selected && selected.classList.add('_selected');
-
-        this._updateDataWidth();
-        this.update();
-    }
-
-    scroll() {
-        this.draw();
-    }
-
-    resize() {
-        const
-            width = this.$manager.offsetWidth,
-            height = this.$manager.offsetHeight;
-
-        if (width !== this._width || height !== this._height) {
-            this._width = width;
-            this._height = height;
-            this.update();
-        }
-    }
-
-    update() {
-        this._updatePadding();
-        this._removeAllBuffers();
-        this._addBuffers();
-        this.draw();
-    }
-
     _getScale() {
-        const width = this.$manager.offsetWidth;
+        const width = this.$buffers.offsetWidth;
         if (this._period === 'all') {
             return width / this._data.series[0].data.length;
         }
@@ -367,13 +371,15 @@ export default class QChart {
     }
 
     _updatePadding() {
-        this._padding = this.$manager.offsetWidth / 2;
-        this.$buffersContainer.style.marginLeft = this._padding + 'px';
-        this.$buffersContainer.style.paddingRight = this._padding + 'px';
+        this._padding = this.$buffers.offsetWidth / 2;
+        setStyle(this.$buffersContainer, {
+            marginLeft: this._padding,
+            paddingRight: this._padding
+        });
     }
 
     _updateDataWidth() {
         this._dataWidth = this._data.series[0].data.length * this._getScale();
-        this.$buffersContainer.style.width = this._dataWidth + 'px';
+        setStyle(this.$buffersContainer, 'width', this._dataWidth);
     }
 }

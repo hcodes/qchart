@@ -24,7 +24,8 @@ export default class MiddleDots {
     setStyle(colors) {
         const
             size = this.options.get('middleDotSize'),
-            margin = -this.options.get('middleDotSize') / 2 - this.options.get('middleDotBorderWidth'),
+            margin = -this.options.get('middleDotSize') / 2 -
+                this.options.get('middleDotBorderWidth'),
             backgroundColor = this.options.get('middleDotBackgroundColor'),
             borderWidth = this.options.get('middleDotBorderWidth');
 

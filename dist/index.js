@@ -313,94 +313,25 @@ var QChart = function () {
         this._data = { series: [] };
         this._buffers = [];
 
-        this._width = this.$manager.offsetWidth;
-        this._height = this.$manager.offsetHeight;
+        this._width = this.$buffers.offsetWidth;
+        this._height = this.$buffers.offsetHeight;
 
         this._cachedAreaWidth = this._width * 1.1;
 
-        this.bindEvents();
+        this._bindEvents();
     }
 
     _createClass$3(QChart, [{
         key: 'destroy',
         value: function destroy() {
             this._removeAllBuffers();
-            this.unbindEvents();
+            this._unbindEvents();
+
             this.options.destroy();
+            this._middleDots.destroy();
+            this._currentValues.destroy();
 
             delete this.$dom;
-        }
-    }, {
-        key: 'bindEvents',
-        value: function bindEvents() {
-            var _this = this;
-
-            this._onresize = function () {
-                _this.resize();
-            };
-
-            this._onscroll = function () {
-                _this.scroll();
-            };
-
-            this._onclickperiod = function (e) {
-                var period = e.target.dataset.value;
-                period && _this.setPeriod(period);
-            };
-
-            if (this.$periods) {
-                this.$periods.addEventListener('click', this._onclickperiod, false);
-            }
-
-            this.$manager.addEventListener('scroll', this._onscroll, false);
-            window.addEventListener('resize', this._onresize, false);
-        }
-    }, {
-        key: 'unbindEvents',
-        value: function unbindEvents() {
-            this.$manager.removeEventListener('scroll', this._onscroll, false);
-            window.removeEventListener('resize', this._onresize, false);
-        }
-    }, {
-        key: '_createBody',
-        value: function _createBody() {
-            var current = createElem('current');
-            this.$dom.appendChild(current);
-            this.$current = new CurrentValues(current, this.options);
-
-            var container = createElem('container');
-            this.$dom.appendChild(container);
-
-            this.$middleLine = createElem('middle-line');
-            container.appendChild(this.$middleLine);
-
-            var middleDots = createElem('middle-dots');
-            container.appendChild(middleDots);
-            this.$middleDots = new MiddleDots(middleDots, this.options);
-
-            this.$manager = createElem('manager');
-            container.appendChild(this.$manager);
-
-            this.$buffersContainer = createElem('buffers-container');
-            this.$manager.appendChild(this.$buffersContainer);
-
-            var optionsPeriods = this.options.get('periods');
-            if (optionsPeriods) {
-                this.$periods = createElem('periods');
-                this.options.get('periods').forEach(function (item) {
-                    var elem = createElem('period');
-                    elem.dataset.value = item.value;
-                    elem.innerHTML = item.text;
-                    elem.classList.add('_value_' + item.value);
-                    if (this._period === item.value) {
-                        elem.classList.add('_selected');
-                    }
-
-                    this.$periods.appendChild(elem);
-                }, this);
-
-                this.$dom.appendChild(this.$periods);
-            }
         }
     }, {
         key: 'clearData',
@@ -414,8 +345,8 @@ var QChart = function () {
 
             if (!data || !Array.isArray(data.series) || !data.series.length) {
                 this.$dom.classList.remove('_has-data');
-                this.$middleDots.remove();
-                this.$current.remove();
+                this._middleDots.remove();
+                this._currentValues.remove();
 
                 this._data = { series: [] };
 
@@ -430,11 +361,11 @@ var QChart = function () {
 
             var series = this._data.series;
             var colors = series.map(function (item, i) {
-                return this.options.get('color' + i);
+                return item.color || this.options.get('color' + i);
             }, this);
 
-            this.$middleDots.create(colors);
-            this.$current.create(colors);
+            this._middleDots.create(colors);
+            this._currentValues.create(colors);
 
             setStyle(this.$dom, 'color', this.options.get('color' + (series.length === 1 ? '0' : '')));
 
@@ -445,11 +376,73 @@ var QChart = function () {
             this.draw();
         }
     }, {
+        key: 'setPeriod',
+        value: function setPeriod(name) {
+            if (name === this._period) {
+                return;
+            }
+
+            this._period = name;
+
+            var wasSelected = this.$periods.querySelector('._selected');
+            wasSelected && wasSelected.classList.remove('_selected');
+
+            var selected = this.$periods.querySelector('._value_' + name);
+            selected && selected.classList.add('_selected');
+
+            this._updateDataWidth();
+            this.update();
+        }
+    }, {
+        key: 'resize',
+        value: function resize() {
+            var width = this.$buffers.offsetWidth,
+                height = this.$buffers.offsetHeight;
+
+            if (width !== this._width || height !== this._height) {
+                this._width = width;
+                this._height = height;
+                this.update();
+            }
+        }
+    }, {
+        key: 'scroll',
+        value: function scroll() {
+            this.draw();
+        }
+    }, {
+        key: 'updateOptions',
+        value: function updateOptions() {
+            setStyle(this.$dom, {
+                backgroundColor: this.options.get('backgroundColor'),
+                color: this.options.get('color')
+            });
+
+            setStyle(this.$middleLine, {
+                backgroundColor: this.options.get('middleLineColor'),
+                width: this.options.get('middleLineWidth'),
+                marginLeft: -this.options.get('middleLineWidth') / 2
+            });
+
+            setStyle(this.$buffers, 'height', this.options.get('height'));
+
+            this._updatePadding();
+        }
+    }, {
+        key: 'update',
+        value: function update() {
+            this._updatePadding();
+            this._removeAllBuffers();
+            this._addBuffers();
+            this.draw();
+        }
+    }, {
         key: 'draw',
         value: function draw() {
-            var scrollLeft = this.$manager.scrollLeft,
+            var scrollLeft = this.$buffers.scrollLeft,
                 x21 = scrollLeft - this._cachedAreaWidth,
-                x22 = scrollLeft + this._cachedAreaWidth;
+                x22 = scrollLeft + this._cachedAreaWidth,
+                series = this._data.series;
 
             this._buffers.forEach(function (buffer, num) {
                 var x11 = buffer.left,
@@ -467,7 +460,7 @@ var QChart = function () {
                 index = 0;
             }
 
-            var dots = this._data.series.map(function (item) {
+            var dots = series.map(function (item) {
                 var lastIndex = item.data.length - 1;
                 var itemIndex = index;
                 if (itemIndex > lastIndex) {
@@ -477,10 +470,10 @@ var QChart = function () {
                 return this._calcY(item.data[itemIndex][1]);
             }, this);
 
-            this.$middleDots.setTop(dots);
+            this._middleDots.setTop(dots);
 
             var timestamp = void 0;
-            var values = this._data.series.map(function (item) {
+            var values = series.map(function (item) {
                 var lastIndex = item.data.length - 1;
                 var itemIndex = index;
                 if (itemIndex > lastIndex) {
@@ -492,7 +485,7 @@ var QChart = function () {
                 return item.data[itemIndex][1];
             }, this);
 
-            this.$current.setValue(timestamp, values);
+            this._currentValues.setValue(timestamp, values);
         }
     }, {
         key: '_drawBuffer',
@@ -502,7 +495,7 @@ var QChart = function () {
                 buffer.canvas = canvas = createElem('buffer', 'canvas');
                 canvas.width = buffer.width;
                 canvas.height = buffer.height;
-                canvas.style.left = buffer.left + 'px';
+                setStyle(canvas, 'left', buffer.left);
                 this.$buffersContainer.appendChild(canvas);
             }
 
@@ -536,6 +529,78 @@ var QChart = function () {
 
                 ctx.stroke();
             }
+        }
+    }, {
+        key: '_createBody',
+        value: function _createBody() {
+            var current = createElem('current');
+            this.$dom.appendChild(current);
+            this._currentValues = new CurrentValues(current, this.options);
+
+            var container = createElem('container');
+            this.$dom.appendChild(container);
+
+            this.$middleLine = createElem('middle-line');
+            container.appendChild(this.$middleLine);
+
+            var middleDots = createElem('middle-dots');
+            container.appendChild(middleDots);
+            this._middleDots = new MiddleDots(middleDots, this.options);
+
+            this.$buffers = createElem('buffers');
+            container.appendChild(this.$buffers);
+
+            this.$buffersContainer = createElem('buffers-container');
+            this.$buffers.appendChild(this.$buffersContainer);
+
+            var optionsPeriods = this.options.get('periods');
+            if (optionsPeriods) {
+                this.$periods = createElem('periods');
+                this.options.get('periods').forEach(function (item) {
+                    var elem = createElem('period');
+                    elem.dataset.value = item.value;
+                    elem.innerHTML = item.text;
+                    elem.classList.add('_value_' + item.value);
+                    if (this._period === item.value) {
+                        elem.classList.add('_selected');
+                    }
+
+                    this.$periods.appendChild(elem);
+                }, this);
+
+                this.$dom.appendChild(this.$periods);
+            }
+        }
+    }, {
+        key: '_bindEvents',
+        value: function _bindEvents() {
+            var _this = this;
+
+            this._onresize = function () {
+                _this.resize();
+            };
+
+            this._onscroll = function () {
+                _this.scroll();
+            };
+
+            this._onclickperiod = function (e) {
+                var period = e.target.dataset.value;
+                period && _this.setPeriod(period);
+            };
+
+            if (this.$periods) {
+                this.$periods.addEventListener('click', this._onclickperiod, false);
+            }
+
+            this.$buffers.addEventListener('scroll', this._onscroll, false);
+            window.addEventListener('resize', this._onresize, false);
+        }
+    }, {
+        key: '_unbindEvents',
+        value: function _unbindEvents() {
+            this.$buffers.removeEventListener('scroll', this._onscroll, false);
+            window.removeEventListener('resize', this._onresize, false);
         }
     }, {
         key: '_calcY',
@@ -577,76 +642,15 @@ var QChart = function () {
     }, {
         key: '_getCountBuffers',
         value: function _getCountBuffers() {
-            var value = this._dataWidth / this.$manager.offsetWidth,
+            var value = this._dataWidth / this.$buffers.offsetWidth,
                 flooredValue = Math.floor(value);
 
             return value === flooredValue ? value : flooredValue + 1;
         }
     }, {
-        key: 'updateOptions',
-        value: function updateOptions() {
-            setStyle(this.$dom, {
-                backgroundColor: this.options.get('backgroundColor'),
-                color: this.options.get('color')
-            });
-
-            setStyle(this.$middleLine, {
-                backgroundColor: this.options.get('middleLineColor'),
-                width: this.options.get('middleLineWidth'),
-                marginLeft: -this.options.get('middleLineWidth') / 2
-            });
-
-            setStyle(this.$manager, 'height', this.options.get('height'));
-
-            this._updatePadding();
-        }
-    }, {
-        key: 'setPeriod',
-        value: function setPeriod(name) {
-            if (name === this._period) {
-                return;
-            }
-
-            this._period = name;
-
-            var wasSelected = this.$periods.querySelector('._selected');
-            wasSelected && wasSelected.classList.remove('_selected');
-
-            var selected = this.$periods.querySelector('._value_' + name);
-            selected && selected.classList.add('_selected');
-
-            this._updateDataWidth();
-            this.update();
-        }
-    }, {
-        key: 'scroll',
-        value: function scroll() {
-            this.draw();
-        }
-    }, {
-        key: 'resize',
-        value: function resize() {
-            var width = this.$manager.offsetWidth,
-                height = this.$manager.offsetHeight;
-
-            if (width !== this._width || height !== this._height) {
-                this._width = width;
-                this._height = height;
-                this.update();
-            }
-        }
-    }, {
-        key: 'update',
-        value: function update() {
-            this._updatePadding();
-            this._removeAllBuffers();
-            this._addBuffers();
-            this.draw();
-        }
-    }, {
         key: '_getScale',
         value: function _getScale() {
-            var width = this.$manager.offsetWidth;
+            var width = this.$buffers.offsetWidth;
             if (this._period === 'all') {
                 return width / this._data.series[0].data.length;
             }
@@ -656,15 +660,17 @@ var QChart = function () {
     }, {
         key: '_updatePadding',
         value: function _updatePadding() {
-            this._padding = this.$manager.offsetWidth / 2;
-            this.$buffersContainer.style.marginLeft = this._padding + 'px';
-            this.$buffersContainer.style.paddingRight = this._padding + 'px';
+            this._padding = this.$buffers.offsetWidth / 2;
+            setStyle(this.$buffersContainer, {
+                marginLeft: this._padding,
+                paddingRight: this._padding
+            });
         }
     }, {
         key: '_updateDataWidth',
         value: function _updateDataWidth() {
             this._dataWidth = this._data.series[0].data.length * this._getScale();
-            this.$buffersContainer.style.width = this._dataWidth + 'px';
+            setStyle(this.$buffersContainer, 'width', this._dataWidth);
         }
     }]);
 

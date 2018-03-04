@@ -33,7 +33,7 @@ var q = new QChart('#qchart', {
         ].join(' ');
     },
     valueFormater: function(val) {
-        return (val.toFixed(2) + ' $').replace(/\./, ',');
+        return (val.toFixed(2) + ' ₽').replace(/\./, ',');
     }
 });
 

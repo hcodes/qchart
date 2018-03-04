@@ -28,11 +28,10 @@ export default class QChart extends Events {
         this.options = new Options(options);
 
         this._period = this.options.get('period');
-        this._periods = this.options.get('periods');
-        this._periodsByValue = {};
-        this._periods.forEach(function(item) {
-            this._periodsByValue[item.value] = item;
-        }, this);
+        this._periodsByValue = this.options.get('periods').reduce((prev, item) => {
+            prev[item.value] = item;
+            return prev;
+        }, {});
 
         this._createBody();
         this.updateOptions();

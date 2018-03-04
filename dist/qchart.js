@@ -413,11 +413,10 @@ var QChart = function (_Events) {
         _this.options = new Options(options);
 
         _this._period = _this.options.get('period');
-        _this._periods = _this.options.get('periods');
-        _this._periodsByValue = {};
-        _this._periods.forEach(function (item) {
-            this._periodsByValue[item.value] = item;
-        }, _this);
+        _this._periodsByValue = _this.options.get('periods').reduce(function (prev, item) {
+            prev[item.value] = item;
+            return prev;
+        }, {});
 
         _this._createBody();
         _this.updateOptions();

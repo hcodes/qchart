@@ -8,6 +8,10 @@
 - Компактный код
 - Гибкие настройки
 
+## Примеры
+- [Один](https://hcodes.github.io/qchart/examples/one.html)
+- [Несколько графиков](https://hcodes.github.io/qchart/examples/some.html)
+
 ## Установка
 ```
 npm i qchart --save-dev

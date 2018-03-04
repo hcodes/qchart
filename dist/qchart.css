@@ -1,7 +1,7 @@
 .qchart {
-    -webkit-user-select: none
-    -ms-user-select: none
-    user-select: none
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
     position: relative;
 }
 
@@ -18,14 +18,14 @@
     -webkit-overflow-scrolling: touch;
 }
 
-.qchart__buffers-container {
-    position: relative;
-    height: 100%;
-}
-
 .qchart__buffer {
     position: absolute;
     top: 0;
+}
+
+.qchart__buffers-container {
+    position: relative;
+    height: 100%;
 }
 
 .qchart__middle-line {
@@ -79,8 +79,8 @@
     cursor: pointer;
     display: inline-block;
     margin-right: 15px;
-    opacity: .6;
-    transition: opacity .3 ease;
+    opacity: .3;
+    transition: opacity .4s ease;
 }
 
 .qchart__period._selected {

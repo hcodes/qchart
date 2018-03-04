@@ -27,7 +27,7 @@ export default class QChart extends Events {
         this.options = new Options(options);
 
         this._period = this.options.get('period');
-        this._periodsByValue = this.options.get('periods').reduce((prev, item) => {
+        this._periodsByValue = (this.options.get('periods') || []).reduce((prev, item) => {
             prev[item.value] = item;
             return prev;
         }, {});
@@ -35,13 +35,13 @@ export default class QChart extends Events {
         this._createBody();
         this.updateOptions();
 
-        this._data = { series: [] };
+        this._data = this._getEmptyData();
         this._buffers = [];
 
-        this._width = this.$buffers.offsetWidth;
-        this._height = this.$buffers.offsetHeight;
+        this._buffersWidth = this.$buffers.offsetWidth;
+        this._buffersHeight = this.$buffers.offsetHeight;
 
-        this._cachedAreaWidth = this._width * 1.1;
+        this._cachedAreaWidth = this._buffersWidth * 1.1;
 
         this._bindEvents();
     }
@@ -60,8 +60,12 @@ export default class QChart extends Events {
         delete this.$dom;
     }
 
+    _getEmptyData() {
+        return { series: [] };
+    }
+
     clearData() {
-        this.setData({ series: [] });
+        this.setData(this._getEmptyData());
     }
 
     setData(data) {
@@ -72,7 +76,7 @@ export default class QChart extends Events {
             this._middleDots.remove();
             this._currentValues.remove();
 
-            this._data = { series: [] };
+            this._data = this._getEmptyData();
 
             return;
         } else {
@@ -124,9 +128,9 @@ export default class QChart extends Events {
             width = this.$buffers.offsetWidth,
             height = this.$buffers.offsetHeight;
 
-        if (width !== this._width || height !== this._height) {
-            this._width = width;
-            this._height = height;
+        if (width !== this._buffersWidth || height !== this._buffersHeight) {
+            this._buffersWidth = width;
+            this._bufferHeight = height;
 
             this.update();
             this.trigger('resize');
@@ -152,12 +156,12 @@ export default class QChart extends Events {
 
         setStyle(this.$buffers, 'height', this.options.get('height'));
 
-        this._updateBufferPadding();
+        this._updateBuffersPadding();
     }
 
     update() {
         this._updateDataWidth();
-        this._updateBufferPadding();
+        this._updateBuffersPadding();
         this._removeAllBuffers();
         this._addBuffers();
         this.draw();
@@ -171,7 +175,7 @@ export default class QChart extends Events {
         this._buffers.forEach(function(buffer, num) {
             if (inRange(
                 buffer.left,
-                buffer.left + this._width,
+                buffer.left + this._buffersWidth,
                 scrollLeft - this._cachedAreaWidth,
                 scrollLeft + this._cachedAreaWidth,
             )) {
@@ -181,7 +185,7 @@ export default class QChart extends Events {
             }
         }, this);
 
-        let index = Math.floor((scrollLeft + this._width / 2 - this._bufferPadding) / this._getScale());
+        let index = Math.floor((scrollLeft + this._buffersWidth / 2 - this._buffersPadding) / this._getScale());
         if (index < 0) {
             index = 0;
         }
@@ -230,7 +234,7 @@ export default class QChart extends Events {
 
             for (let i = 0; i < series.length; i++) {
                 const
-                    x = i * scale - bufferNum * this._width,
+                    x = i * scale - bufferNum * this._buffersWidth,
                     y = this._calcY(series[i][1]);
 
                 if (i) {
@@ -239,7 +243,7 @@ export default class QChart extends Events {
                     ctx.moveTo(x, y);
                 }
 
-                if (x > this._width) {
+                if (x > this._buffersWidth) {
                     break;
                 }
             }
@@ -314,21 +318,21 @@ export default class QChart extends Events {
     }
 
     _calcY(value) {
-        return this._height - value * this._height / this._minMax.max;
+        return this._buffersHeight - value * this._buffersHeight / this._minMax.max;
     }
 
     _addBuffers() {
         const count = this._getCountBuffers();
         for (let i = 0; i < count; i++) {
             this._buffers.push({
-                left: i * this._width,
-                width: this._width,
-                height: this._height,
+                left: i * this._buffersWidth,
+                width: this._buffersWidth,
+                height: this._buffersHeight,
                 canvas: null
             });
         }
 
-        this._buffers[count - 1].width = this._dataWidth - (count - 1) * this._width;
+        this._buffers[count - 1].width = this._dataWidth - (count - 1) * this._buffersWidth;
     }
 
     _removeBuffer(buffer) {
@@ -363,11 +367,11 @@ export default class QChart extends Events {
         return width / this._periodsByValue[this._period].days;
     }
 
-    _updateBufferPadding() {
-        this._bufferPadding = this.$buffers.offsetWidth / 2;
+    _updateBuffersPadding() {
+        this._buffersPadding = this.$buffers.offsetWidth / 2;
         setStyle(this.$buffersContainer, {
-            marginLeft: this._bufferPadding,
-            paddingRight: this._bufferPadding
+            marginLeft: this._buffersPadding,
+            paddingRight: this._buffersPadding
         });
     }
 
@@ -379,7 +383,7 @@ export default class QChart extends Events {
     _updateScrollAlign() {
         const align = this.options.get('scrollAlign');
         this.$buffers.scrollLeft = align === 'right' ?
-            this.$buffersContainer.offsetWidth + this._bufferPadding * 2 - this.$buffers.offsetWidth :
+            this.$buffersContainer.offsetWidth + this._buffersPadding * 2 - this.$buffers.offsetWidth :
             0;
     }
 }

@@ -28,6 +28,7 @@
     "dist/qchart.min.js",
     "dist/qchart.es6.js",
     "dist/qchart.css",
+    "dist/qchart.min.css",
     "README.md",
     "LICENSE"
   ],

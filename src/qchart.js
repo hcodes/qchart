@@ -51,6 +51,7 @@ export default class QChart {
         this._middleDots.destroy();
         this._currentValues.destroy();
 
+        this.$dom.innerHTML = '';
         delete this.$dom;
     }
 
@@ -109,7 +110,6 @@ export default class QChart {
         const selected = this.$periods.querySelector('._value_' + name);
         selected && selected.classList.add('_selected');
 
-        this._updateDataWidth();
         this.update();
     }
 
@@ -147,6 +147,7 @@ export default class QChart {
     }
 
     update() {
+        this._updateDataWidth();
         this._updatePadding();
         this._removeAllBuffers();
         this._addBuffers();
@@ -245,7 +246,7 @@ export default class QChart {
                 }
 
                 if (x > this._width) {
-                    break;
+                    //break;
                 }
             }
 

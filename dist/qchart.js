@@ -331,6 +331,7 @@ var QChart = function () {
             this._middleDots.destroy();
             this._currentValues.destroy();
 
+            this.$dom.innerHTML = '';
             delete this.$dom;
         }
     }, {
@@ -390,7 +391,6 @@ var QChart = function () {
             var selected = this.$periods.querySelector('._value_' + name);
             selected && selected.classList.add('_selected');
 
-            this._updateDataWidth();
             this.update();
         }
     }, {
@@ -431,6 +431,7 @@ var QChart = function () {
     }, {
         key: 'update',
         value: function update() {
+            this._updateDataWidth();
             this._updatePadding();
             this._removeAllBuffers();
             this._addBuffers();
@@ -523,12 +524,14 @@ var QChart = function () {
                     }
 
                     if (x > this._width) {
-                        break;
+                        //break;
                     }
                 }
 
                 ctx.stroke();
             }
+
+            console.log(bufferNum);
         }
     }, {
         key: '_createBody',

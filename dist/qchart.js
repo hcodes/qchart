@@ -426,13 +426,13 @@ var QChart = function () {
 
             setStyle(this.$buffers, 'height', this.options.get('height'));
 
-            this._updatePadding();
+            this._updateBufferPadding();
         }
     }, {
         key: 'update',
         value: function update() {
             this._updateDataWidth();
-            this._updatePadding();
+            this._updateBufferPadding();
             this._removeAllBuffers();
             this._addBuffers();
             this.draw();
@@ -456,7 +456,7 @@ var QChart = function () {
                 }
             }, this);
 
-            var index = Math.floor((scrollLeft + this._width / 2 - this._padding) / this._getScale());
+            var index = Math.floor((scrollLeft + this._width / 2 - this._bufferPadding) / this._getScale());
             if (index < 0) {
                 index = 0;
             }
@@ -530,8 +530,6 @@ var QChart = function () {
 
                 ctx.stroke();
             }
-
-            console.log(bufferNum);
         }
     }, {
         key: '_createBody',
@@ -661,12 +659,12 @@ var QChart = function () {
             return width / this._periodsByValue[this._period].days;
         }
     }, {
-        key: '_updatePadding',
-        value: function _updatePadding() {
-            this._padding = this.$buffers.offsetWidth / 2;
+        key: '_updateBufferPadding',
+        value: function _updateBufferPadding() {
+            this._bufferPadding = this.$buffers.offsetWidth / 2;
             setStyle(this.$buffersContainer, {
-                marginLeft: this._padding,
-                paddingRight: this._padding
+                marginLeft: this._bufferPadding,
+                paddingRight: this._bufferPadding
             });
         }
     }, {

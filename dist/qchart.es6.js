@@ -144,12 +144,12 @@ export default class QChart {
 
         setStyle(this.$buffers, 'height', this.options.get('height'));
 
-        this._updatePadding();
+        this._updateBufferPadding();
     }
 
     update() {
         this._updateDataWidth();
-        this._updatePadding();
+        this._updateBufferPadding();
         this._removeAllBuffers();
         this._addBuffers();
         this.draw();
@@ -177,7 +177,7 @@ export default class QChart {
             }
         }, this);
 
-        let index = Math.floor((scrollLeft + this._width / 2 - this._padding) / this._getScale());
+        let index = Math.floor((scrollLeft + this._width / 2 - this._bufferPadding) / this._getScale());
         if (index < 0) {
             index = 0;
         }
@@ -253,8 +253,6 @@ export default class QChart {
 
             ctx.stroke();
         }
-
-        console.log(bufferNum);
     }
 
     _createBody() {
@@ -374,11 +372,11 @@ export default class QChart {
         return width / this._periodsByValue[this._period].days;
     }
 
-    _updatePadding() {
-        this._padding = this.$buffers.offsetWidth / 2;
+    _updateBufferPadding() {
+        this._bufferPadding = this.$buffers.offsetWidth / 2;
         setStyle(this.$buffersContainer, {
-            marginLeft: this._padding,
-            paddingRight: this._padding
+            marginLeft: this._bufferPadding,
+            paddingRight: this._bufferPadding
         });
     }
 

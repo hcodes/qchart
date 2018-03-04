@@ -21,7 +21,15 @@ var q = new QChart('#qchart', {
                 11: 'декабря'
             }[date.getMonth()],
             date.getFullYear(),
-            ' г.'
+            ' г., ' + [
+                'пн',
+                'вт',
+                'ср',
+                'чт',
+                'пт',
+                'сб',
+                'вс'
+            ][date.getDay()]
         ].join(' ');
     },
     valueFormater: function(val) {

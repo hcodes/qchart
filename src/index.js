@@ -1,8 +1,9 @@
-import Elems from './elems';
+import {createElem, setStyle} from './dom';
+import {getMinMaxForSomeSeries} from './tools';
+
 import Options from './options';
 import MiddleDots from './middle-dots';
 import CurrentValues from './current-values';
-import {getMinMaxForSomeSeries, setStyle} from './tools';
 
 export default class QChart {
     /**
@@ -14,14 +15,11 @@ export default class QChart {
             document.querySelector(dom) :
             dom;
 
-        if (!dom) {
-            return;
-        }
+        if (!dom) { return; }
 
-        this._dom = dom;
-        this._dom.classList.add('qchart');
+        this.$dom = dom;
+        this.$dom.classList.add('qchart');
 
-        this.elems = new Elems(dom);
         this.options = new Options(options);
 
         this.clearData();
@@ -36,8 +34,8 @@ export default class QChart {
 
         this._buffers = [];
 
-        this._width = this._manager.offsetWidth;
-        this._height = this._manager.offsetHeight;
+        this._width = this.$manager.offsetWidth;
+        this._height = this.$manager.offsetHeight;
 
         this._cachedAreaWidth = this._width * 1.5;
 
@@ -53,46 +51,38 @@ export default class QChart {
             this.scroll();
         };
 
-        this._manager.addEventListener('scroll', this._onscroll, false);
+        this.$manager.addEventListener('scroll', this._onscroll, false);
         window.addEventListener('resize', this._onresize, false);
     }
 
     unbindEvents() {
-        this._manager.removeEventListener('scroll', this._onscroll, false);
+        this.$manager.removeEventListener('scroll', this._onscroll, false);
         window.removeEventListener('resize', this._onresize, false);
     }
 
     createBody() {
-        const elems = this.elems;
+        const current = createElem('current');
+        this.$dom.appendChild(current);
+        this.$current = new CurrentValues(current, this.options);
 
-        const current = elems.create('current');
-        elems.append(current);
-        this._current = new CurrentValues(current, this.options);
+        const container = createElem('container');
+        this.$dom.appendChild(container);
 
-        const container = elems.create('container');
-        elems.append(container);
+        this.$middleLine = createElem('middle-line');
+        container.appendChild(this.$middleLine);
 
-        this._middleLine = elems.create('middle-line');
-        setStyle(this._middleLine, {
-            backgroundColor: this.options.get('middleLineColor'),
-            width: this.options.get('middleLineWidth'),
-            marginLeft: -this.options.get('middleLineWidth') / 2
-        });
-        elems.append(this._middleLine, container);
+        const middleDots = createElem('middle-dots');
+        container.appendChild(middleDots);
+        this.$middleDots = new MiddleDots(middleDots, this.options);
 
-        const middleDots = elems.create('middle-dots');
-        elems.append(middleDots, container);
-        this._middleDots = new MiddleDots(middleDots, this.options);
+        this.$manager = createElem('manager');
+        container.appendChild(this.$manager);
 
-        this._manager = elems.create('manager');
-        setStyle(this._manager, 'height', this.options.get('height'));
-        elems.append(this._manager, container);
+        this.$buffersContainer = createElem('buffers-container');
+        this.$manager.appendChild(this.$buffersContainer);
 
-        this._buffersContainer = elems.create('buffers-container');
-        elems.append(this._buffersContainer, this._manager);
-
-        this._controls = elems.create('controls');
-        elems.append(this._controls);
+        this.$controls = createElem('controls');
+        this.$dom.appendChild(this.$controls);
     }
 
     clearData() {
@@ -105,31 +95,31 @@ export default class QChart {
     }
 
     setData(data) {
-        this.removeAllBuffers();
+        this._removeAllBuffers();
 
         if (!data || !Array.isArray(data.series) || !data.series.length) {
-            this._dom.classList.remove('_has-data');
+            this.$dom.classList.remove('_has-data');
             this.clearData();
-            this._middleDots.remove();
-            this._current.remove();
+            this.$middleDots.remove();
+            this.$current.remove();
 
             return;
         } else {
-            this._dom.classList.add('_has-data');
+            this.$dom.classList.add('_has-data');
         }
 
         this._data = data;
         this._dataWidth = this._data.series[0].data.length * this.options.get('scale');
-        this._buffersContainer.style.width = this._dataWidth + 'px';
+        this.$buffersContainer.style.width = this._dataWidth + 'px';
 
         const colors = this._data.series.map(function(item, i) {
             return this.options.get('color' + i);
         }, this);
 
-        this._middleDots.create(colors);
-        this._current.create(colors);
+        this.$middleDots.create(colors);
+        this.$current.create(colors);
 
-        this.addBuffers();
+        this._addBuffers();
 
         this._minMax = getMinMaxForSomeSeries(this._data.series);
 
@@ -139,7 +129,7 @@ export default class QChart {
     draw() {
         console.time('a');
         const
-            scrollLeft = this._manager.scrollLeft,
+            scrollLeft = this.$manager.scrollLeft,
             x21 = scrollLeft - this._cachedAreaWidth,
             x22 = scrollLeft + this._cachedAreaWidth;
 
@@ -152,9 +142,9 @@ export default class QChart {
                 (x11 > x21 && x11 < x22) ||
                 (x12 > x21 && x12 < x22)
             ) {
-                !buffer.canvas && this.drawBuffer(buffer, num);
+                !buffer.canvas && this._drawBuffer(buffer, num);
             } else {
-                this.removeBuffer(buffer);
+                this._removeBuffer(buffer);
             }
         }, this);
 
@@ -173,7 +163,7 @@ export default class QChart {
             return this._calcY(item.data[itemIndex][1]);
         }, this);
 
-        this._middleDots.setTop(dots);
+        this.$middleDots.setTop(dots);
 
         let timestamp;
         const values = this._data.series.map(function(item) {
@@ -189,19 +179,19 @@ export default class QChart {
         }, this);
 
 
-        this._current.setValue(timestamp, values);
+        this.$current.setValue(timestamp, values);
 
         console.timeEnd('a');
     }
 
-    drawBuffer(buffer, bufferNum) {
+    _drawBuffer(buffer, bufferNum) {
         let canvas = buffer.canvas;
         if (!canvas) {
-            buffer.canvas = canvas = this.elems.create('buffer', 'canvas');
+            buffer.canvas = canvas = createElem('buffer', 'canvas');
             canvas.width = buffer.width;
             canvas.height = buffer.height;
             canvas.style.left = buffer.left + 'px';
-            this._buffersContainer.appendChild(canvas);
+            this.$buffersContainer.appendChild(canvas);
         }
 
         const
@@ -242,8 +232,8 @@ export default class QChart {
         return this._height - value * this._height / this._minMax.max;
     }
 
-    addBuffers() {
-        const count = this.getCountBuffers();
+    _addBuffers() {
+        const count = this._getCountBuffers();
         for (let i = 0; i < count; i++) {
             this._buffers.push({
                 left: i * this._width,
@@ -256,36 +246,42 @@ export default class QChart {
         this._buffers[count - 1].width = this._dataWidth - (count - 1) * this._width;
     }
 
-    removeBuffer(buffer) {
+    _removeBuffer(buffer) {
         if (buffer.canvas) {
-            this._buffersContainer.removeChild(buffer.canvas);
+            this.$buffersContainer.removeChild(buffer.canvas);
             buffer.canvas = null;
         }
     }
 
-    removeAllBuffers() {
+    _removeAllBuffers() {
         this._buffers.forEach(function(buffer) {
-            this.removeBuffer(buffer);
+            this._removeBuffer(buffer);
         }, this);
 
         this._buffers = [];
     }
 
-    getCountBuffers() {
+    _getCountBuffers() {
         const
-            value = this._dataWidth / this._manager.offsetWidth,
+            value = this._dataWidth / this.$manager.offsetWidth,
             flooredValue = Math.floor(value);
 
         return value === flooredValue ? value : flooredValue + 1;
     }
 
     updateOptions() {
-        setStyle(this._dom, {
+        setStyle(this.$dom, {
             backgroundColor: this.options.get('backgroundColor'),
             color: this.options.get('color')
         });
 
-        setStyle(this._manager, 'height', this.options.get('height'));
+        setStyle(this.$middleLine, {
+            backgroundColor: this.options.get('middleLineColor'),
+            width: this.options.get('middleLineWidth'),
+            marginLeft: -this.options.get('middleLineWidth') / 2
+        });
+
+        setStyle(this.$manager, 'height', this.options.get('height'));
 
         this._updatePadding();
     }
@@ -296,8 +292,8 @@ export default class QChart {
 
     resize() {
         const
-            width = this._manager.offsetWidth,
-            height = this._manager.offsetHeight;
+            width = this.$manager.offsetWidth,
+            height = this.$manager.offsetHeight;
 
         if (width !== this._width || height !== this._height) {
             this._width = width;
@@ -308,24 +304,22 @@ export default class QChart {
 
     update() {
         this._updatePadding();
-        this.removeAllBuffers();
-        this.addBuffers();
+        this._removeAllBuffers();
+        this._addBuffers();
         this.draw();
     }
 
     _updatePadding() {
-        this._padding = this._manager.offsetWidth / 2;
-        this._buffersContainer.style.marginLeft = this._padding + 'px';
-        this._buffersContainer.style.paddingRight = this._padding + 'px';
+        this._padding = this.$manager.offsetWidth / 2;
+        this.$buffersContainer.style.marginLeft = this._padding + 'px';
+        this.$buffersContainer.style.paddingRight = this._padding + 'px';
     }
 
     destroy() {
-        this.removeAllBuffers();
+        this._removeAllBuffers();
         this.unbindEvents();
-
-        this.elems.destroy();
         this.options.destroy();
 
-        delete this._dom;
+        delete this.$dom;
     }
 }

@@ -1,23 +1,21 @@
-import Elems from './elems';
-import {setStyle} from './tools';
+import {createElem, setStyle} from './dom';
 
 export default class MiddleDots {
     constructor(main, options) {
-        this._main = main;
+        this.$main = main;
 
-        this.elems = new Elems(main);
         this.options = options;
 
-        this._dots = [];
+        this.$dots = [];
     }
 
     create(colors) {
         this.remove();
 
         for (let i = 0; i < colors.length; i++) {
-            let dot = this.elems.create('middle-dot');
-            this._main.appendChild(dot);
-            this._dots.push(dot);
+            let dot = createElem('middle-dot');
+            this.$main.appendChild(dot);
+            this.$dots.push(dot);
         }
 
         this.setStyle(colors);
@@ -30,7 +28,7 @@ export default class MiddleDots {
             backgroundColor = this.options.get('middleDotBackgroundColor'),
             borderWidth = this.options.get('middleDotBorderWidth');
 
-        this._dots.forEach(function(dot, i) {
+        this.$dots.forEach(function(dot, i) {
             setStyle(dot, {
                 borderColor: colors[i] ||
                     this.options.get('color' + i),
@@ -45,27 +43,23 @@ export default class MiddleDots {
     }
 
     setTop(positions) {
-        this._dots.forEach(function(dot, i) {
+        this.$dots.forEach(function(dot, i) {
             setStyle(dot, 'top', positions[i]);
         });
     }
 
     remove() {
-        this._dots.forEach(function(dot) {
+        this.$dots.forEach(function(dot) {
             dot.parentNode.removeChild(dot);
         });
 
-        this._dots = [];
+        this.$dots = [];
     }
 
     destroy() {
         this.remove();
 
-        this.elems.destroy();
-        delete this.elems;
-
         delete this.options;
-
-        delete this._main;
+        delete this.$main;
     }
 }

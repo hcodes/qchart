@@ -3,7 +3,6 @@
 [![NPM version](https://img.shields.io/npm/v/qchart.svg?style=flat)](https://www.npmjs.com/package/qchart)
 [![NPM downloads](https://img.shields.io/npm/dm/qchart.svg?style=flat)](https://www.npmjs.com/package/qchart)
 [![Build Status](https://img.shields.io/travis/hcodes/qchart.svg?style=flat)](https://travis-ci.org/hcodes/qchart)
-[![Build Status](https://img.shields.io/appveyor/ci/hcodes/qchart/dev.svg?style=flat)](https://ci.appveyor.com/project/hcodes/qchart)
 [![Dependency Status](https://img.shields.io/david/hcodes/qchart.svg?style=flat)](https://david-dm.org/hcodes/qchart)
 
 Легковесная библиотека для построения графиков котировок для мобильных устройств.

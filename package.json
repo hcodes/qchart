@@ -55,8 +55,6 @@
     "build": "gulp",
     "prepare": "gulp",
     "eslint": "eslint .",
-    "test": "npm run build && npm run eslint && npm run unit-test-coverage",
-    "unit-test": "mocha -u bdd -R spec --recursive test",
-    "unit-test-coverage": "istanbul cover ./node_modules/mocha/bin/_mocha -- -u bdd -R spec --recursive test"
+    "test": "npm run build && npm run eslint"
   }
 }

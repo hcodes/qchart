@@ -179,7 +179,8 @@ export default class QChart extends Events {
                 scrollLeft - this._cachedAreaWidth,
                 scrollLeft + this._cachedAreaWidth,
             )) {
-                !buffer.canvas && this._drawBuffer(buffer, num);
+                //!buffer.canvas && this._drawBuffer(buffer, num);
+                this._drawBuffer(buffer, num);
             } else {
                 this._removeBuffer(buffer);
             }
@@ -225,6 +226,29 @@ export default class QChart extends Events {
         ctx.fillStyle = this.options.get('backgroundColor');
         ctx.fillRect(0, 0, buffer.width, buffer.height);
         ctx.lineWidth = this.options.get('lineWidth');
+
+        let
+            from = Math.floor((this.$buffers.scrollLeft - this.$buffers.offsetWidth / 2) / this._getScale()),
+            to = from + Math.floor(this.$buffers.offsetWidth / this._getScale()),
+            maxLen = this._data.series[0].data.length - 1;
+
+        if (from < 0) {
+            from = 0;
+        }
+
+        if (from > maxLen) {
+            from = maxLen;
+        }
+
+        if (to < 0) {
+            to = 0;
+        }
+
+        if (to > maxLen) {
+            to = maxLen;
+        }
+
+        this._minMax = getMinMaxForSomeSeries(this._data.series, from, to);
 
         for (let n = 0; n < this._data.series.length; n++) {
             const series = this._data.series[n].data;
@@ -376,7 +400,7 @@ export default class QChart extends Events {
     }
 
     _updateDataWidth() {
-        this._dataWidth = this._data.series[0].data.length * this._getScale();
+        this._dataWidth = ((this._data.series[0].data.length - 1) * this._getScale()) || 1;
         setStyle(this.$buffersContainer, 'width', this._dataWidth);
     }
 

@@ -32,11 +32,12 @@ function setStyle(dom, propertyName, propertyValue) {
     }
 }
 
-function getMinMax(arr) {
+function getMinMax(arr, from, to) {
     var min = void 0,
         max = void 0;
-    min = max = arr[0][1];
-    for (var i = 0; i < arr.length; i++) {
+    min = max = arr[from][1];
+
+    for (var i = from; i < to; i++) {
         min = Math.min(min, arr[i][1]);
         max = Math.max(max, arr[i][1]);
     }
@@ -44,14 +45,14 @@ function getMinMax(arr) {
     return { min: min, max: max };
 }
 
-function getMinMaxForSomeSeries(series) {
-    var firstMinMax = getMinMax(series[0].data);
+function getMinMaxForSomeSeries(series, from, to) {
+    var firstMinMax = getMinMax(series[0].data, from, to);
     var min = firstMinMax.min,
         max = firstMinMax.max;
 
     if (series.length > 1) {
         for (var i = 0; i < series.length; i++) {
-            var minMax = getMinMax(series[i].data);
+            var minMax = getMinMax(series[i].data, from, to);
             min = Math.min(minMax.min, min);
             max = Math.max(minMax.max, max);
         }
@@ -574,7 +575,8 @@ var QChart = function (_Events) {
 
             this._buffers.forEach(function (buffer, num) {
                 if (inRange(buffer.left, buffer.left + this._buffersWidth, scrollLeft - this._cachedAreaWidth, scrollLeft + this._cachedAreaWidth)) {
-                    !buffer.canvas && this._drawBuffer(buffer, num);
+                    //!buffer.canvas && this._drawBuffer(buffer, num);
+                    this._drawBuffer(buffer, num);
                 } else {
                     this._removeBuffer(buffer);
                 }
@@ -622,6 +624,28 @@ var QChart = function (_Events) {
             ctx.fillStyle = this.options.get('backgroundColor');
             ctx.fillRect(0, 0, buffer.width, buffer.height);
             ctx.lineWidth = this.options.get('lineWidth');
+
+            var from = Math.floor((this.$buffers.scrollLeft - this.$buffers.offsetWidth / 2) / this._getScale()),
+                to = from + Math.floor(this.$buffers.offsetWidth / this._getScale()),
+                maxLen = this._data.series[0].data.length - 1;
+
+            if (from < 0) {
+                from = 0;
+            }
+
+            if (from > maxLen) {
+                from = maxLen;
+            }
+
+            if (to < 0) {
+                to = 0;
+            }
+
+            if (to > maxLen) {
+                to = maxLen;
+            }
+
+            this._minMax = getMinMaxForSomeSeries(this._data.series, from, to);
 
             for (var n = 0; n < this._data.series.length; n++) {
                 var series = this._data.series[n].data;
@@ -787,7 +811,7 @@ var QChart = function (_Events) {
     }, {
         key: '_updateDataWidth',
         value: function _updateDataWidth() {
-            this._dataWidth = this._data.series[0].data.length * this._getScale();
+            this._dataWidth = (this._data.series[0].data.length - 1) * this._getScale() || 1;
             setStyle(this.$buffersContainer, 'width', this._dataWidth);
         }
     }, {

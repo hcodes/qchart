@@ -177,7 +177,7 @@ export default class QChart extends Events {
                 buffer.left,
                 buffer.left + this._buffersWidth,
                 scrollLeft - this._cachedAreaWidth,
-                scrollLeft + this._cachedAreaWidth,
+                scrollLeft + this._cachedAreaWidth
             )) {
                 //!buffer.canvas && this._drawBuffer(buffer, num);
                 this._drawBuffer(buffer, num);

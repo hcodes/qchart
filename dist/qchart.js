@@ -1,4 +1,4 @@
-/*! QChart | © 2018 Denis Seleznev | MIT License | https://github.com/hcodes/qchart/ */
+/*! QChart | © 2019 Denis Seleznev | MIT License | https://github.com/hcodes/qchart/ */
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
 	typeof define === 'function' && define.amd ? define(factory) :

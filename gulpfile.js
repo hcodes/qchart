@@ -3,15 +3,15 @@
 const
     gulp = require('gulp'),
     babel = require('rollup-plugin-babel'),
-    cssnano = require('gulp-cssnano'),
-    autoprefixer = require('gulp-autoprefixer'),
+    postcss = require('gulp-postcss'),
+    cssnano = require('cssnano'),
+    autoprefixer = require('autoprefixer'),
     rename = require('gulp-rename'),
     replace = require('gulp-replace'),
     rollup = require('gulp-rollup'),
     uglify = require('gulp-uglify'),
     uglifyOptions = {output: {comments: /^!/}},
-    browsers = ['ie >= 10', 'Firefox >= 24', 'Chrome >= 26', 'iOS >= 6', 'Safari >= 6', 'Android > 4.0'],
-    copyright = '/*! QChart | © 2018 Denis Seleznev | MIT License | https://github.com/hcodes/qchart/ */\n';
+    copyright = '/*! QChart | © 2019 Denis Seleznev | MIT License | https://github.com/hcodes/qchart/ */\n';
 
 gulp.task('js', function() {
     return gulp.src('src/*.js')
@@ -42,8 +42,10 @@ gulp.task('css', function() {
 
 gulp.task('css.min', gulp.series('css', function() {
     return gulp.src('dist/qchart.css')
-        .pipe(cssnano())
-        .pipe(autoprefixer({ browsers }))
+        .pipe(postcss([
+            autoprefixer(),
+            cssnano()
+        ]))
         .pipe(rename('qchart.min.css'))
         .pipe(gulp.dest('dist/'));
 }));

@@ -1,0 +1,30 @@
+# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.
+version: v1.13.5
+ignore: {}
+# patches apply the minimum changes required to fix a vulnerability
+patch:
+  SNYK-JS-LODASH-450202:
+    - rollup-plugin-babel > @babel/helper-module-imports > @babel/types > lodash:
+        patched: '2019-07-04T01:59:36.610Z'
+    - eslint > lodash:
+        patched: '2019-07-04T01:59:36.610Z'
+    - eslint > inquirer > lodash:
+        patched: '2019-07-04T01:59:36.610Z'
+    - '@babel/core > @babel/generator > lodash':
+        patched: '2019-07-04T01:59:36.610Z'
+    - eslint > table > lodash:
+        patched: '2019-07-04T01:59:36.610Z'
+    - '@babel/core > @babel/traverse > @babel/generator > lodash':
+        patched: '2019-07-04T01:59:36.610Z'
+    - '@babel/core > lodash':
+        patched: '2019-07-04T01:59:36.610Z'
+    - '@babel/preset-env > @babel/plugin-transform-modules-systemjs > @babel/helper-hoist-variables > @babel/types > lodash':
+        patched: '2019-07-04T01:59:36.610Z'
+    - '@babel/preset-env > @babel/plugin-transform-modules-commonjs > @babel/helper-module-transforms > @babel/helper-split-export-declaration > @babel/types > lodash':
+        patched: '2019-07-04T01:59:36.610Z'
+    - '@babel/preset-env > @babel/plugin-transform-async-to-generator > @babel/helper-remap-async-to-generator > @babel/helper-wrap-function > @babel/traverse > @babel/generator > lodash':
+        patched: '2019-07-04T01:59:36.610Z'
+    - '@babel/preset-env > @babel/plugin-transform-exponentiation-operator > @babel/helper-builder-binary-assignment-operator-visitor > @babel/helper-explode-assignable-expression > @babel/traverse > @babel/helper-function-name > @babel/types > lodash':
+        patched: '2019-07-04T01:59:36.610Z'
+    - '@babel/preset-env > @babel/plugin-transform-async-to-generator > @babel/helper-remap-async-to-generator > @babel/helper-wrap-function > @babel/traverse > @babel/helper-function-name > @babel/helper-get-function-arity > @babel/types > lodash':
+        patched: '2019-07-04T01:59:36.610Z'
